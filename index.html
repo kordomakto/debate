@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام تحكيم المناظرات العربية</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --team-a-bg: #E6F1FB;
+    --team-a-text: #0C447C;
+    --team-a-accent: #1565C0;
+    --team-b-bg: #EEEDFE;
+    --team-b-text: #3C3489;
+    --team-b-accent: #4527A0;
+    --border: #E0E0E0;
+    --surface: #fff;
+    --muted: #888;
+    --label: #444;
+    --font: 'Cairo', 'Tajawal', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    direction: rtl;
+    background: #F5F6FA;
+    color: #1a1a1a;
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── TOP HEADER ── */
+  .site-header {
+    background: #fff;
+    border-bottom: 2px solid #111;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .site-header h1 {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+  }
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .header-controls label {
+    font-weight: 700;
+    color: var(--label);
+    font-size: 13px;
+  }
+  select, input[type="text"] {
+    font-family: var(--font);
+    font-size: 13px;
+    border: 1.5px solid #ccc;
+    border-radius: 4px;
+    padding: 5px 9px;
+    direction: rtl;
+    background: #fff;
+    color: #111;
+  }
+  select:focus, input[type="text"]:focus { outline: none; border-color: #555; }
+  #custom-topic-wrap { display: none; }
+  #custom-topic-wrap input { width: 180px; }
+
+  .btn {
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 700;
+    border: 1.5px solid #111;
+    border-radius: 4px;
+    padding: 6px 14px;
+    cursor: pointer;
+    background: #fff;
+    color: #111;
+    transition: background .15s, color .15s;
+  }
+  .btn:hover { background: #111; color: #fff; }
+  .btn-black { background: #111; color: #fff; }
+  .btn-black:hover { background: #333; }
+  .btn-danger { border-color: #c62828; color: #c62828; }
+  .btn-danger:hover { background: #c62828; color: #fff; }
+
+  /* ── JUDGE TABS ── */
+  .judge-tabs-row {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #111;
+    background: #fff;
+    overflow-x: auto;
+  }
+  .judge-tab {
+    flex: 1;
+    min-width: 100px;
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    border-left: 1px solid #ccc;
+    font-weight: 700;
+    font-size: 13px;
+    user-select: none;
+    transition: background .15s, color .15s;
+    color: #555;
+    background: #f8f8f8;
+  }
+  .judge-tab:last-child { border-left: none; }
+  .judge-tab.active { background: #111; color: #fff; }
+  .judge-tab-name {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    margin-top: 2px;
+    opacity: 0.75;
+  }
+  .judge-tab.active .judge-tab-name { opacity: 0.9; }
+
+  /* ── JUDGE PANEL ── */
+  .judge-panel { display: none; padding: 16px; }
+  .judge-panel.active { display: block; }
+
+  .judge-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .judge-name-row label { font-weight: 700; font-size: 13px; }
+  .judge-name-row input { width: 200px; }
+
+  /* ── TEAMS GRID ── */
+  .teams-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 700px) {
+    .teams-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── TEAM CARD ── */
+  .team-card { border: 1.5px solid #ddd; border-radius: 6px; overflow: hidden; background: #fff; }
+  .team-header-a { background: var(--team-a-bg); color: var(--team-a-text); padding: 10px 12px; display: flex; align-items: center; gap: 8px; }
+  .team-header-b { background: var(--team-b-bg); color: var(--team-b-text); padding: 10px 12px; display: flex; align-items: center; gap: 8px; }
+  .team-header-a input, .team-header-b input {
+    font-family: var(--font);
+    font-weight: 800;
+    font-size: 15px;
+    border: none;
+    background: transparent;
+    color: inherit;
+    width: 100%;
+    outline: none;
+  }
+  .team-header-a input::placeholder { color: #90aac8; }
+  .team-header-b input::placeholder { color: #9f9bd8; }
+
+  /* ── MEMBER BLOCK ── */
+  .member-block { border-top: 1px solid #eee; padding: 10px 12px; }
+  .member-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .member-label { font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .member-name-row input {
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: 13px;
+    border: none;
+    border-bottom: 1px solid #ddd;
+    background: transparent;
+    color: #111;
+    width: 100%;
+    padding: 2px 0;
+    outline: none;
+  }
+
+  /* ── CRITERIA TABLE ── */
+  .criteria-table { width: 100%; border-collapse: collapse; }
+  .criteria-table tr { border-top: 1px solid #f0f0f0; }
+  .criteria-table td { padding: 3px 0; vertical-align: middle; }
+  .crit-name { font-size: 11.5px; color: #333; font-weight: 600; width: 55%; padding-left: 6px; }
+  .score-btns { display: flex; gap: 3px; justify-content: flex-end; }
+  .score-btn {
+    width: 24px; height: 24px;
+    border: 1.5px solid #ccc;
+    border-radius: 3px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+    color: #666;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .1s;
+    font-family: var(--font);
+    padding: 0;
+  }
+  .score-btn:hover { border-color: #555; color: #111; }
+  .score-btn.selected-a { background: var(--team-a-accent); border-color: var(--team-a-accent); color: #fff; }
+  .score-btn.selected-b { background: var(--team-b-accent); border-color: var(--team-b-accent); color: #fff; }
+
+  /* member score display */
+  .member-score-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; font-size: 12px; }
+  .score-chip { padding: 2px 8px; border-radius: 3px; font-weight: 700; }
+  .score-chip-a { background: var(--team-a-bg); color: var(--team-a-text); }
+  .score-chip-b { background: var(--team-b-bg); color: var(--team-b-text); }
+  .score-label { color: var(--muted); font-size: 11px; }
+
+  .notes-area {
+    width: 100%;
+    font-family: var(--font);
+    font-size: 12px;
+    direction: rtl;
+    border: 1px solid #e0e0e0;
+    border-radius: 3px;
+    padding: 4px 7px;
+    resize: none;
+    margin-top: 6px;
+    color: #444;
+    background: #fafafa;
+    outline: none;
+  }
+  .notes-area:focus { border-color: #999; background: #fff; }
+
+  /* ── SCOREBOARD ── */
+  .scoreboard {
+    margin: 16px;
+    border: 2px solid #111;
+    border-radius: 6px;
+    background: #fff;
+    overflow: hidden;
+  }
+  .scoreboard-header {
+    background: #111;
+    color: #fff;
+    padding: 10px 16px;
+    font-weight: 900;
+    font-size: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .scoreboard-body { padding: 14px 16px; }
+  .score-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .score-row:last-child { border-bottom: none; }
+  .sb-name { font-weight: 700; font-size: 14px; }
+  .sb-bar-wrap { height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; flex: 1; margin: 0 8px; }
+  .sb-bar { height: 100%; border-radius: 4px; transition: width .3s; }
+  .sb-bar-a { background: var(--team-a-accent); }
+  .sb-bar-b { background: var(--team-b-accent); }
+  .sb-val { font-weight: 900; font-size: 15px; }
+  .sb-val-a { color: var(--team-a-text); }
+  .sb-val-b { color: var(--team-b-text); }
+  .sb-max { font-size: 11px; color: #aaa; }
+  .team-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-top: 2px solid #eee;
+    margin-top: 6px;
+  }
+  .team-total-label { font-weight: 700; font-size: 13px; }
+  .team-total-val { font-weight: 900; font-size: 18px; }
+  .team-total-val-a { color: var(--team-a-text); }
+  .team-total-val-b { color: var(--team-b-text); }
+
+  .winner-banner {
+    margin: 0 16px 12px;
+    padding: 12px 18px;
+    border-radius: 6px;
+    border: 2px solid;
+    font-size: 16px;
+    font-weight: 900;
+    text-align: center;
+    display: none;
+  }
+  .winner-banner.show { display: block; }
+  .winner-banner.team-a { background: var(--team-a-bg); border-color: var(--team-a-accent); color: var(--team-a-text); }
+  .winner-banner.team-b { background: var(--team-b-bg); border-color: var(--team-b-accent); color: var(--team-b-text); }
+  .winner-banner.draw { background: #f5f5f5; border-color: #888; color: #333; }
+
+  .sb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 550px) { .sb-grid { grid-template-columns: 1fr; } }
+  .sb-team-block { }
+  .sb-team-title {
+    font-size: 12px;
+    font-weight: 800;
+    padding: 4px 0 8px;
+    border-bottom: 2px solid;
+    margin-bottom: 8px;
+  }
+  .sb-team-title-a { color: var(--team-a-text); border-color: var(--team-a-accent); }
+  .sb-team-title-b { color: var(--team-b-text); border-color: var(--team-b-accent); }
+
+  /* ── PRINT STYLES ── */
+  @media print {
+    body { background: #fff; font-size: 12px; }
+    .no-print { display: none !important; }
+    .site-header, .judge-tabs-row { display: none; }
+    .print-view { display: block !important; }
+    .judge-panel { display: block !important; page-break-after: always; }
+    .scoreboard { margin: 10px 0; }
+  }
+  .print-view { display: none; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .divider { height: 1px; background: #eee; margin: 10px 0; }
+
+  /* modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: #fff;
+    border: 2px solid #111;
+    border-radius: 8px;
+    padding: 24px;
+    width: 300px;
+    text-align: center;
+    font-family: var(--font);
+  }
+  .modal-box h3 { font-size: 16px; font-weight: 900; margin-bottom: 10px; }
+  .modal-box p { font-size: 13px; color: #555; margin-bottom: 18px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+  .round-badge {
+    background: #111;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 3px;
+    padding: 3px 9px;
+  }
+</style>
+</head>
+<body>
+
+<!-- SITE HEADER -->
+<div class="site-header no-print">
+  <h1>⚖️ نظام تحكيم المناظرات العربية</h1>
+  <div class="header-controls">
+    <label>الجولة:</label>
+    <select id="round-select">
+      <option value="1">الجولة الأولى</option>
+      <option value="2">الجولة الثانية</option>
+      <option value="3">الجولة الثالثة</option>
+      <option value="final">النهائية</option>
+    </select>
+    <label>الموضوع:</label>
+    <select id="topic-select">
+      <option value="التبرع بالأعضاء">التبرع بالأعضاء</option>
+      <option value="البنوك الحديثة والربا">البنوك الحديثة والربا</option>
+      <option value="الذكاء الاصطناعي والأخلاق">الذكاء الاصطناعي والأخلاق</option>
+      <option value="نظرية الانفجار العظيم مقابل علم الكون الإسلامي">نظرية الانفجار العظيم مقابل علم الكون الإسلامي</option>
+      <option value="custom">موضوع مخصص…</option>
+    </select>
+    <span id="custom-topic-wrap"><input type="text" id="custom-topic" placeholder="اكتب الموضوع هنا"></span>
+    <button class="btn" onclick="printResults()">🖨️ طباعة</button>
+    <button class="btn" onclick="exportText()">📋 تصدير</button>
+    <button class="btn btn-danger" onclick="showReset()">🔄 إعادة تعيين</button>
+  </div>
+</div>
+
+<!-- JUDGE TABS -->
+<div class="judge-tabs-row no-print" id="judge-tabs"></div>
+
+<!-- JUDGE PANELS -->
+<div id="panels-container"></div>
+
+<!-- WINNER BANNER -->
+<div id="winner-banner" class="winner-banner no-print"></div>
+
+<!-- SCOREBOARD -->
+<div class="scoreboard no-print">
+  <div class="scoreboard-header">
+    <span>📊 لوحة النتائج الإجمالية</span>
+    <span id="sb-round-badge" class="round-badge">الجولة الأولى</span>
+  </div>
+  <div class="scoreboard-body" id="scoreboard-body"></div>
+</div>
+
+<!-- RESET MODAL -->
+<div class="modal-overlay" id="reset-modal">
+  <div class="modal-box">
+    <h3>⚠️ إعادة تعيين</h3>
+    <p>هل أنت متأكد؟ ستُحذف جميع الدرجات والملاحظات.</p>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="doReset()">نعم، إعادة التعيين</button>
+      <button class="btn" onclick="hideReset()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CRITERIA = [
+  'المحتوى والحجج',
+  'اللغة العربية',
+  'الرد والتفاعل',
+  'الأداء والسلوك',
+  'المرجعية الإسلامية/العلمية'
+];
+const NUM_JUDGES = 4;
+const NUM_MEMBERS = 3;
+const MAX_CRIT = 5;
+
+// ── STATE ──
+let state = {
+  judgeNames: ['الحكم الأول', 'الحكم الثاني', 'الحكم الثالث', 'الحكم الرابع'],
+  teamNames: ['الفريق الأول (مؤيد)', 'الفريق الثاني (معارض)'],
+  memberNames: [
+    ['المتناظر الأول', 'المتناظر الثاني', 'المتناظر الثالث'],
+    ['المتناظر الأول', 'المتناظر الثاني', 'المتناظر الثالث']
+  ],
+  // scores[judge][team][member][criterion] = 0-5
+  scores: Array.from({length: NUM_JUDGES}, () =>
+    Array.from({length: 2}, () =>
+      Array.from({length: NUM_MEMBERS}, () =>
+        Array(CRITERIA.length).fill(0)
+      )
+    )
+  ),
+  notes: Array.from({length: NUM_JUDGES}, () =>
+    Array.from({length: 2}, () => Array(NUM_MEMBERS).fill(''))
+  ),
+  activeJudge: 0
+};
+
+let activeJudge = 0;
+
+function getScore(j, t, m) {
+  return state.scores[j][t][m].reduce((a,b) => a+b, 0);
+}
+function getMemberTotal(t, m) {
+  let s = 0;
+  for (let j = 0; j < NUM_JUDGES; j++) s += getScore(j, t, m);
+  return s;
+}
+function getTeamJudgeTotal(j, t) {
+  let s = 0;
+  for (let m = 0; m < NUM_MEMBERS; m++) s += getScore(j, t, m);
+  return s;
+}
+function getTeamTotal(t) {
+  let s = 0;
+  for (let j = 0; j < NUM_JUDGES; j++) s += getTeamJudgeTotal(j, t);
+  return s;
+}
+
+// ── BUILD UI ──
+function buildTabs() {
+  const cont = document.getElementById('judge-tabs');
+  cont.innerHTML = '';
+  for (let j = 0; j < NUM_JUDGES; j++) {
+    const tab = document.createElement('div');
+    tab.className = 'judge-tab' + (j === activeJudge ? ' active' : '');
+    tab.dataset.judge = j;
+    tab.innerHTML = `الحكم ${arabicNum(j+1)}<span class="judge-tab-name" id="tab-name-${j}">${escHtml(state.judgeNames[j])}</span>`;
+    tab.onclick = () => switchJudge(j);
+    cont.appendChild(tab);
+  }
+}
+
+function arabicNum(n) {
+  const a = ['','الأول','الثاني','الثالث','الرابع'];
+  return a[n] || n;
+}
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function switchJudge(j) {
+  activeJudge = j;
+  document.querySelectorAll('.judge-tab').forEach((t,i) => t.classList.toggle('active', i===j));
+  document.querySelectorAll('.judge-panel').forEach((p,i) => p.classList.toggle('active', i===j));
+}
+
+function buildPanels() {
+  const cont = document.getElementById('panels-container');
+  cont.innerHTML = '';
+  for (let j = 0; j < NUM_JUDGES; j++) {
+    const panel = document.createElement('div');
+    panel.className = 'judge-panel' + (j === activeJudge ? ' active' : '');
+    panel.dataset.judge = j;
+    panel.innerHTML = buildPanelHTML(j);
+    cont.appendChild(panel);
+  }
+  attachEvents();
+}
+
+function buildPanelHTML(j) {
+  let html = `
+    <div class="judge-name-row">
+      <label>اسم الحكم:</label>
+      <input type="text" value="${escHtml(state.judgeNames[j])}" data-judge="${j}" class="judge-name-input" placeholder="اسم الحكم">
+    </div>
+    <div class="teams-grid">`;
+  for (let t = 0; t < 2; t++) {
+    const hClass = t===0 ? 'team-header-a' : 'team-header-b';
+    html += `<div class="team-card">
+      <div class="${hClass}">
+        <input type="text" value="${escHtml(state.teamNames[t])}" data-team="${t}" class="team-name-input" placeholder="اسم الفريق">
+      </div>`;
+    for (let m = 0; m < NUM_MEMBERS; m++) {
+      const chipClass = t===0 ? 'score-chip-a' : 'score-chip-b';
+      const selClass = t===0 ? 'selected-a' : 'selected-b';
+      html += `<div class="member-block">
+        <div class="member-name-row">
+          <span class="member-label">م${m+1}</span>
+          <input type="text" value="${escHtml(state.memberNames[t][m])}" data-team="${t}" data-member="${m}" class="member-name-input" placeholder="اسم المتناظر">
+        </div>
+        <table class="criteria-table">`;
+      for (let c = 0; c < CRITERIA.length; c++) {
+        const cur = state.scores[j][t][m][c];
+        html += `<tr>
+          <td class="crit-name">${CRITERIA[c]}</td>
+          <td>
+            <div class="score-btns">`;
+        for (let v = 0; v <= MAX_CRIT; v++) {
+          html += `<button class="score-btn${cur===v?' '+selClass:''}" data-judge="${j}" data-team="${t}" data-member="${m}" data-crit="${c}" data-val="${v}">${v}</button>`;
+        }
+        html += `</div></td></tr>`;
+      }
+      const jScore = getScore(j,t,m);
+      const allScore = getMemberTotal(t,m);
+      html += `</table>
+        <div class="member-score-row">
+          <span class="score-label">هذا الحكم:</span>
+          <span class="score-chip ${chipClass}" id="ms-j${j}-t${t}-m${m}">${jScore}/25</span>
+          <span class="score-label">إجمالي الحكام:</span>
+          <span class="score-chip ${chipClass}" id="ms-all-t${t}-m${m}">${allScore}/100</span>
+        </div>
+        <textarea class="notes-area" rows="1" data-judge="${j}" data-team="${t}" data-member="${m}" placeholder="ملاحظات…">${escHtml(state.notes[j][t][m])}</textarea>
+      </div>`;
+    }
+    // team totals in panel
+    const jTeam = getTeamJudgeTotal(j,t);
+    const allTeam = getTeamTotal(t);
+    html += `<div style="padding:8px 12px;background:${t===0?'var(--team-a-bg)':'var(--team-b-bg)'};display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+      <span style="font-weight:700;color:${t===0?'var(--team-a-text)':'var(--team-b-text)'}">مجموع الفريق</span>
+      <span style="font-weight:900;color:${t===0?'var(--team-a-text)':'var(--team-b-text)'}">
+        <span id="pt-j${j}-t${t}">${jTeam}</span>/75 &nbsp;|&nbsp; 
+        <span id="pt-all-t${t}">${allTeam}</span>/300
+      </span>
+    </div>`;
+    html += `</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function attachEvents() {
+  // score buttons
+  document.querySelectorAll('.score-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const j = +this.dataset.judge, t = +this.dataset.team, m = +this.dataset.member;
+      const c = +this.dataset.crit, v = +this.dataset.val;
+      state.scores[j][t][m][c] = v;
+      updateScoreBtns(j, t, m, c);
+      updateScores(t, m);
+    });
+  });
+  // judge name
+  document.querySelectorAll('.judge-name-input').forEach(inp => {
+    inp.addEventListener('input', function() {
+      state.judgeNames[+this.dataset.judge] = this.value;
+      updateJudgeTabName(+this.dataset.judge);
+    });
+  });
+  // team name
+  document.querySelectorAll('.team-name-input').forEach(inp => {
+    inp.addEventListener('input', function() {
+      state.teamNames[+this.dataset.team] = this.value;
+      updateScoreboard();
+    });
+  });
+  // member name
+  document.querySelectorAll('.member-name-input').forEach(inp => {
+    inp.addEventListener('input', function() {
+      state.memberNames[+this.dataset.team][+this.dataset.member] = this.value;
+      updateScoreboard();
+    });
+  });
+  // notes
+  document.querySelectorAll('.notes-area').forEach(ta => {
+    ta.addEventListener('input', function() {
+      state.notes[+this.dataset.judge][+this.dataset.team][+this.dataset.member] = this.value;
+    });
+  });
+}
+
+function updateScoreBtns(j, t, m, c) {
+  const selClass = t===0 ? 'selected-a' : 'selected-b';
+  const cur = state.scores[j][t][m][c];
+  document.querySelectorAll(`.score-btn[data-judge="${j}"][data-team="${t}"][data-member="${m}"][data-crit="${c}"]`).forEach(btn => {
+    btn.classList.remove('selected-a','selected-b');
+    if (+btn.dataset.val === cur) btn.classList.add(selClass);
+  });
+}
+
+function updateScores(t, m) {
+  for (let j = 0; j < NUM_JUDGES; j++) {
+    const jScore = getScore(j,t,m);
+    const el = document.getElementById(`ms-j${j}-t${t}-m${m}`);
+    if (el) el.textContent = jScore+'/25';
+    const jTeam = getTeamJudgeTotal(j,t);
+    const elPt = document.getElementById(`pt-j${j}-t${t}`);
+    if (elPt) elPt.textContent = jTeam;
+  }
+  const allScore = getMemberTotal(t,m);
+  const elAll = document.getElementById(`ms-all-t${t}-m${m}`);
+  if (elAll) elAll.textContent = allScore+'/100';
+  // update all team totals (affects all panels)
+  for (let j = 0; j < NUM_JUDGES; j++) {
+    const allTeam = getTeamTotal(t);
+    const elAllT = document.getElementById(`pt-all-t${t}`);
+    if (elAllT) elAllT.textContent = allTeam;
+  }
+  updateScoreboard();
+}
+
+function updateJudgeTabName(j) {
+  const el = document.getElementById(`tab-name-${j}`);
+  if (el) el.textContent = state.judgeNames[j];
+}
+
+function updateScoreboard() {
+  const body = document.getElementById('scoreboard-body');
+  if (!body) return;
+  let html = '<div class="sb-grid">';
+  for (let t = 0; t < 2; t++) {
+    const titleClass = t===0 ? 'sb-team-title-a' : 'sb-team-title-b';
+    const chipClass = t===0 ? 'score-chip-a' : 'score-chip-b';
+    html += `<div class="sb-team-block">
+      <div class="sb-team-title ${titleClass}">${escHtml(state.teamNames[t])}</div>`;
+    for (let m = 0; m < NUM_MEMBERS; m++) {
+      const total = getMemberTotal(t,m);
+      const pct = Math.round(total/100*100);
+      html += `<div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+          <span style="font-size:12px;font-weight:600;">${escHtml(state.memberNames[t][m])}</span>
+          <span class="score-chip ${chipClass}" style="font-size:13px;">${total}<span style="font-weight:400;font-size:11px;opacity:.7">/100</span></span>
+        </div>
+        <div class="sb-bar-wrap">
+          <div class="sb-bar ${t===0?'sb-bar-a':'sb-bar-b'}" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+    }
+    const teamTotal = getTeamTotal(t);
+    const teamPct = Math.round(teamTotal/300*100);
+    html += `<div class="team-total-row">
+      <span class="team-total-label">مجموع الفريق</span>
+      <span class="team-total-val ${t===0?'team-total-val-a':'team-total-val-b'}">${teamTotal}<span style="font-size:12px;font-weight:400;opacity:.6">/300</span></span>
+    </div>
+    </div>`;
+  }
+  html += '</div>';
+  body.innerHTML = html;
+  updateWinner();
+}
+
+function updateWinner() {
+  const banner = document.getElementById('winner-banner');
+  const a = getTeamTotal(0), b = getTeamTotal(1);
+  if (a === 0 && b === 0) { banner.className = 'winner-banner no-print'; banner.style.display='none'; return; }
+  banner.style.display='';
+  if (a > b) {
+    banner.className = 'winner-banner show team-a no-print';
+    banner.innerHTML = `🏆 الفائز: ${escHtml(state.teamNames[0])} بمجموع ${a}/300`;
+  } else if (b > a) {
+    banner.className = 'winner-banner show team-b no-print';
+    banner.innerHTML = `🏆 الفائز: ${escHtml(state.teamNames[1])} بمجموع ${b}/300`;
+  } else {
+    banner.className = 'winner-banner show draw no-print';
+    banner.innerHTML = `🤝 تعادل! كلا الفريقين حصلا على ${a}/300`;
+  }
+}
+
+function getTopic() {
+  const sel = document.getElementById('topic-select').value;
+  if (sel === 'custom') return document.getElementById('custom-topic').value || 'موضوع مخصص';
+  return sel;
+}
+function getRound() {
+  const v = document.getElementById('round-select').value;
+  const map = {'1':'الجولة الأولى','2':'الجولة الثانية','3':'الجولة الثالثة','final':'النهائية'};
+  return map[v] || v;
+}
+
+document.getElementById('topic-select').addEventListener('change', function() {
+  document.getElementById('custom-topic-wrap').style.display = this.value==='custom' ? 'inline-flex' : 'none';
+});
+document.getElementById('round-select').addEventListener('change', function() {
+  const badge = document.getElementById('sb-round-badge');
+  if (badge) badge.textContent = getRound();
+});
+
+function showReset() { document.getElementById('reset-modal').classList.add('show'); }
+function hideReset() { document.getElementById('reset-modal').classList.remove('show'); }
+function doReset() {
+  state.scores = Array.from({length: NUM_JUDGES}, () =>
+    Array.from({length: 2}, () =>
+      Array.from({length: NUM_MEMBERS}, () => Array(CRITERIA.length).fill(0))
+    )
+  );
+  state.notes = Array.from({length: NUM_JUDGES}, () =>
+    Array.from({length: 2}, () => Array(NUM_MEMBERS).fill(''))
+  );
+  hideReset();
+  buildPanels();
+  updateScoreboard();
+}
+
+function printResults() {
+  const topic = getTopic();
+  const round = getRound();
+  let win = window.open('', '_blank');
+  let html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+    <meta charset="UTF-8">
+    <title>نتائج المناظرة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'Cairo', sans-serif; direction: rtl; padding: 20px; font-size: 13px; }
+      h1 { font-size: 18px; text-align: center; margin-bottom: 4px; }
+      .meta { text-align: center; color: #666; font-size: 13px; margin-bottom: 20px; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+      th, td { border: 1px solid #ccc; padding: 5px 8px; text-align: right; }
+      th { background: #f0f0f0; font-weight: 700; font-size: 12px; }
+      .judge-header { background: #111; color: #fff; font-size: 14px; font-weight: 900; padding: 8px; margin: 16px 0 4px; }
+      .team-a { color: #0C447C; font-weight: 700; }
+      .team-b { color: #3C3489; font-weight: 700; }
+      .total-row td { font-weight: 900; background: #f9f9f9; }
+      .winner { text-align: center; font-size: 16px; font-weight: 900; padding: 12px; margin: 20px 0; border: 2px solid #111; }
+    </style></head><body>
+    <h1>⚖️ نتائج المناظرة</h1>
+    <div class="meta">الموضوع: ${escHtml(topic)} | ${escHtml(round)}</div>`;
+
+  for (let j = 0; j < NUM_JUDGES; j++) {
+    html += `<div class="judge-header">${escHtml(state.judgeNames[j])}</div>
+    <table><thead><tr>
+      <th>الفريق</th><th>المتناظر</th>`;
+    for (const c of CRITERIA) html += `<th>${escHtml(c)}</th>`;
+    html += `<th>المجموع /25</th><th>ملاحظات</th></tr></thead><tbody>`;
+    for (let t = 0; t < 2; t++) {
+      for (let m = 0; m < NUM_MEMBERS; m++) {
+        html += `<tr>
+          <td class="${t===0?'team-a':'team-b'}">${escHtml(state.teamNames[t])}</td>
+          <td>${escHtml(state.memberNames[t][m])}</td>`;
+        for (let c = 0; c < CRITERIA.length; c++) {
+          html += `<td style="text-align:center">${state.scores[j][t][m][c]}</td>`;
+        }
+        html += `<td style="text-align:center;font-weight:900">${getScore(j,t,m)}</td>
+          <td style="font-size:11px">${escHtml(state.notes[j][t][m])}</td></tr>`;
+      }
+      const tTotal = getTeamJudgeTotal(j,t);
+      html += `<tr class="total-row">
+        <td class="${t===0?'team-a':'team-b'}" colspan="2">مجموع ${escHtml(state.teamNames[t])}</td>
+        <td colspan="${CRITERIA.length}"></td>
+        <td style="text-align:center">${tTotal}/75</td>
+        <td></td></tr>`;
+    }
+    html += '</tbody></table>';
+  }
+
+  const a = getTeamTotal(0), b = getTeamTotal(1);
+  let winnerText = '';
+  if (a > b) winnerText = `🏆 الفائز: ${state.teamNames[0]} — ${a}/300`;
+  else if (b > a) winnerText = `🏆 الفائز: ${state.teamNames[1]} — ${b}/300`;
+  else winnerText = `🤝 تعادل — ${a}/300`;
+  html += `<div class="winner">${escHtml(winnerText)}</div>`;
+
+  // Final totals table
+  html += `<h2 style="font-size:15px;margin-top:20px;margin-bottom:6px;">النتائج الإجمالية</h2>
+  <table><thead><tr><th>المتناظر</th><th>الفريق</th><th>الإجمالي /100</th></tr></thead><tbody>`;
+  for (let t = 0; t < 2; t++) {
+    for (let m = 0; m < NUM_MEMBERS; m++) {
+      html += `<tr><td>${escHtml(state.memberNames[t][m])}</td>
+        <td class="${t===0?'team-a':'team-b'}">${escHtml(state.teamNames[t])}</td>
+        <td style="text-align:center;font-weight:900">${getMemberTotal(t,m)}/100</td></tr>`;
+    }
+  }
+  html += '</tbody></table>';
+  html += `<script>window.onload=()=>window.print()<\/script></body></html>`;
+  win.document.write(html);
+  win.document.close();
+}
+
+function exportText() {
+  const topic = getTopic();
+  const round = getRound();
+  let lines = [];
+  lines.push('═══════════════════════════════════════');
+  lines.push('       نظام تحكيم المناظرات العربية');
+  lines.push('═══════════════════════════════════════');
+  lines.push(`الموضوع: ${topic}`);
+  lines.push(`الجولة: ${round}`);
+  lines.push('');
+  for (let j = 0; j < NUM_JUDGES; j++) {
+    lines.push(`───────────────────────────────────────`);
+    lines.push(`الحكم: ${state.judgeNames[j]}`);
+    lines.push(`───────────────────────────────────────`);
+    for (let t = 0; t < 2; t++) {
+      lines.push(`الفريق: ${state.teamNames[t]}`);
+      for (let m = 0; m < NUM_MEMBERS; m++) {
+        lines.push(`  ${state.memberNames[t][m]} (${getMemberTotal(t,m)}/100 إجمالاً):`);
+        for (let c = 0; c < CRITERIA.length; c++) {
+          lines.push(`    ${CRITERIA[c]}: ${state.scores[j][t][m][c]}/5`);
+        }
+        lines.push(`    المجموع (هذا الحكم): ${getScore(j,t,m)}/25`);
+        if (state.notes[j][t][m]) lines.push(`    ملاحظات: ${state.notes[j][t][m]}`);
+      }
+      lines.push(`  مجموع الفريق (هذا الحكم): ${getTeamJudgeTotal(j,t)}/75`);
+    }
+    lines.push('');
+  }
+  lines.push('═══════════════════════════════════════');
+  lines.push('         النتائج الإجمالية');
+  lines.push('═══════════════════════════════════════');
+  for (let t = 0; t < 2; t++) {
+    lines.push(`${state.teamNames[t]}: ${getTeamTotal(t)}/300`);
+    for (let m = 0; m < NUM_MEMBERS; m++) {
+      lines.push(`  ${state.memberNames[t][m]}: ${getMemberTotal(t,m)}/100`);
+    }
+  }
+  const a = getTeamTotal(0), b = getTeamTotal(1);
+  lines.push('');
+  if (a > b) lines.push(`🏆 الفائز: ${state.teamNames[0]}`);
+  else if (b > a) lines.push(`🏆 الفائز: ${state.teamNames[1]}`);
+  else lines.push('🤝 النتيجة: تعادل');
+  lines.push('═══════════════════════════════════════');
+
+  const text = lines.join('\n');
+  // copy to clipboard or download
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('تم نسخ النتائج إلى الحافظة ✓');
+    });
+  } else {
+    const a2 = document.createElement('a');
+    a2.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+    a2.download = 'debate-results.txt';
+    a2.click();
+  }
+}
+
+// ── INIT ──
+buildTabs();
+buildPanels();
+updateScoreboard();
+</script>
+</body>
+</html>
