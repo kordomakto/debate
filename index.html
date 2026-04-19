@@ -290,7 +290,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
       <button class="code-chip" id="admin-code-display" onclick="copyCode()" title="انقر للنسخ">——</button>
       <span id="admin-status-badge" class="status-bdg">—</span>
       <button class="btn tbtn" onclick="adminExport()">📋 تصدير</button>
-      <button class="btn tbtn" onclick="adminPrint()">🖨️ طباعة</button>
+      <button class="btn tbtn" onclick="adminPrint()">🖨️ طباعة المسؤول</button>
+      <button class="btn tbtn" style="border-color:#F9A825;color:#F9A825" onclick="publicPrint()">📢 طباعة الجمهور</button>
       <button class="btn tbtn" onclick="goBack()">خروج</button>
     </div>
   </div>
@@ -380,7 +381,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
           <div class="asec-hdr"><span>🏆 النتيجة النهائية</span></div>
           <div style="padding:14px" id="final-result-body"></div>
           <div class="fr-actions">
-            <button class="btn btn-black" onclick="adminPrint()">🖨️ طباعة</button>
+            <button class="btn btn-black" onclick="adminPrint()">🖨️ طباعة المسؤول</button>
+            <button class="btn" style="background:#F9A825;border-color:#F9A825;color:#111" onclick="publicPrint()">📢 طباعة الجمهور</button>
             <button class="btn" onclick="adminExport()">📋 نسخ</button>
           </div>
         </div>
@@ -1010,6 +1012,142 @@ function doPrint(data){
   H+=`<div class="winner">${esc(wt)}</div><script>window.onload=()=>window.print()<\/script></body></html>`;
   win.document.write(H); win.document.close();
 }
+
+
+// ── Public Print (no judge breakdown) ──
+function doPublicPrint(data){
+  const scores=data.scores||{},tNames=data.teamNames||['',''],mNames=data.memberNames||[[],[]];
+  const topic=data.topic==='custom'?(data.customTopic||'—'):(data.topic||'—');
+  const rmap={'1':'الجولة الأولى','2':'الجولة الثانية','3':'الجولة الثالثة','final':'النهائية'};
+  const round=rmap[data.round]||data.round||'—';
+
+  // Build per-criterion combined totals for each member
+  // critTotal[t][m][c] = sum of all 4 judges for that criterion
+  function critTotal(t,m,c){
+    let s=0;
+    for(let j=1;j<=4;j++){
+      const sc=((scores[j]||[])[t]||[])[m];
+      if(Array.isArray(sc)) s+=sc[c]||0;
+    }
+    return s;
+  }
+
+  const aTotal=calcTeamTotal(scores,0), bTotal=calcTeamTotal(scores,1);
+  let winnerHtml='';
+  if(aTotal>bTotal)
+    winnerHtml=`<div class="pub-winner pub-a">🏆 الفريق الفائز: ${esc(tNames[0])}<br><span class="pub-score">${aTotal} / 300</span></div>`;
+  else if(bTotal>aTotal)
+    winnerHtml=`<div class="pub-winner pub-b">🏆 الفريق الفائز: ${esc(tNames[1])}<br><span class="pub-score">${bTotal} / 300</span></div>`;
+  else
+    winnerHtml=`<div class="pub-winner pub-draw">🤝 تعادل بين الفريقين<br><span class="pub-score">${aTotal} / 300</span></div>`;
+
+  const win=window.open('','_blank');
+  let H=`<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>نتائج المناظرة — عرض عام</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Cairo',sans-serif;direction:rtl;padding:28px;font-size:13px;background:#fff;color:#111}
+  .page-title{text-align:center;font-size:22px;font-weight:900;margin-bottom:4px}
+  .page-meta{text-align:center;color:#666;font-size:13px;margin-bottom:24px}
+  .pub-winner{text-align:center;padding:18px 24px;border-radius:8px;margin-bottom:24px;font-size:18px;font-weight:900;line-height:1.8}
+  .pub-winner .pub-score{font-size:26px;display:block;margin-top:4px}
+  .pub-a{background:#E6F1FB;color:#0C447C;border:2px solid #1565C0}
+  .pub-b{background:#EEEDFE;color:#3C3489;border:2px solid #4527A0}
+  .pub-draw{background:#f5f5f5;color:#333;border:2px solid #888}
+  .team-section{margin-bottom:28px}
+  .team-title{font-size:15px;font-weight:900;padding:10px 14px;margin-bottom:0}
+  .team-title-a{background:#E6F1FB;color:#0C447C;border-right:5px solid #1565C0}
+  .team-title-b{background:#EEEDFE;color:#3C3489;border-right:5px solid #4527A0}
+  .team-total-row{display:flex;justify-content:space-between;align-items:center;
+    padding:9px 14px;font-size:14px;font-weight:900;border-top:2px solid #ddd;margin-top:0}
+  .team-total-a{background:#dbeeff;color:#0C447C}
+  .team-total-b{background:#e0dcff;color:#3C3489}
+  table{width:100%;border-collapse:collapse;margin-bottom:0}
+  thead tr{background:#f0f0f0}
+  th{padding:7px 10px;font-size:11px;font-weight:700;text-align:center;border:1px solid #ddd;color:#444}
+  th.name-col{text-align:right}
+  td{padding:7px 10px;border:1px solid #e8e8e8;font-size:12px;text-align:center;vertical-align:middle}
+  td.name-cell{text-align:right;font-weight:700;font-size:13px}
+  td.total-cell{font-weight:900;font-size:14px}
+  td.total-a{color:#0C447C;background:#f0f7ff}
+  td.total-b{color:#3C3489;background:#f3f0ff}
+  tr:nth-child(even){background:#fafafa}
+  .crit-max{font-size:10px;color:#aaa;font-weight:400;display:block}
+  .summary-table{width:100%;border-collapse:collapse;margin-top:24px}
+  .summary-table th{background:#111;color:#fff;padding:9px 14px;font-size:13px;text-align:right}
+  .summary-table td{padding:9px 14px;border:1px solid #ddd;font-size:14px}
+  .summary-table .s-team{font-weight:700}
+  .summary-table .s-total{font-weight:900;font-size:16px;text-align:center}
+  .s-a{color:#0C447C}.s-b{color:#3C3489}
+  .note{font-size:11px;color:#aaa;text-align:center;margin-top:20px}
+  @media print{body{padding:14px}.pub-winner{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="page-title">⚖️ نتائج المناظرة</div>
+<div class="page-meta">الموضوع: ${esc(topic)} &nbsp;|&nbsp; ${esc(round)}</div>
+${winnerHtml}`;
+
+  // Per-team detailed table
+  for(let t=0;t<2;t++){
+    const tCls=t===0?'team-title-a':'team-title-b';
+    const totCls=t===0?'team-total-a':'team-total-b';
+    const tdCls=t===0?'total-a':'total-b';
+    const teamTot=calcTeamTotal(scores,t);
+    H+=`<div class="team-section">
+      <div class="team-title ${tCls}">${esc(tNames[t])}</div>
+      <table>
+        <thead><tr>
+          <th class="name-col">المتناظر</th>`;
+    CRITERIA.forEach(c=>{
+      H+=`<th>${esc(c)}<span class="crit-max">/20</span></th>`;
+    });
+    H+=`<th>الإجمالي<span class="crit-max">/100</span></th></tr></thead>
+        <tbody>`;
+    for(let m=0;m<NM;m++){
+      const memberTot=calcMemberTotal(scores,t,m);
+      H+=`<tr><td class="name-cell">${esc((mNames[t]||[])[m]||'م'+(m+1))}</td>`;
+      for(let c=0;c<5;c++){
+        H+=`<td>${critTotal(t,m,c)}</td>`;
+      }
+      H+=`<td class="total-cell ${tdCls}">${memberTot}</td></tr>`;
+    }
+    H+=`</tbody></table>
+      <div class="team-total-row ${totCls}">
+        <span>مجموع ${esc(tNames[t])}</span>
+        <span>${teamTot} / 300</span>
+      </div>
+    </div>`;
+  }
+
+  // Final summary comparison table
+  H+=`<table class="summary-table">
+    <thead><tr><th>الفريق</th><th style="text-align:center">المجموع الكلي / 300</th><th style="text-align:center">النتيجة</th></tr></thead>
+    <tbody>`;
+  for(let t=0;t<2;t++){
+    const tot=calcTeamTotal(scores,t);
+    const cls=t===0?'s-a':'s-b';
+    const isWinner=(t===0&&aTotal>bTotal)||(t===1&&bTotal>aTotal);
+    const draw=aTotal===bTotal;
+    H+=`<tr>
+      <td class="s-team ${cls}">${esc(tNames[t])}</td>
+      <td class="s-total ${cls}">${tot}</td>
+      <td style="text-align:center;font-weight:900">${draw?'🤝 تعادل':isWinner?'🏆 فائز':'—'}</td>
+    </tr>`;
+  }
+  H+=`</tbody></table>
+  <div class="note">هذه النتائج الإجمالية المجمّعة من ${NJ} حكام — لا تعكس درجات أي حكم بشكل منفرد</div>
+  <script>window.onload=()=>window.print()<\/script>
+</body></html>`;
+
+  win.document.write(H); win.document.close();
+}
+
+window.publicPrint = function(){ doPublicPrint(adminData); };
 
 window.goBack = function(){ clearLocal(); location.reload(); };
 
