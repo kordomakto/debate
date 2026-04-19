@@ -4,630 +4,48 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>منصة تحكيم المناظرات العربية</title>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-
-<!-- Firebase SDK -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getDatabase, ref, set, get, update, onValue, push, remove
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBoRGnNoaJgDJ8xlOXeOcCiQZH_6S3KjV8",
-  authDomain: "debate-judging.firebaseapp.com",
-  databaseURL: "https://debate-judging-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "debate-judging",
-  storageBucket: "debate-judging.firebasestorage.app",
-  messagingSenderId: "284325186087",
-  appId: "1:284325186087:web:0683326e9d8a460505dc02"
-};
-
-// ─────────────────────────────────────────────────────────
-const CRITERIA = [
-  'المحتوى والحجج',
-  'اللغة العربية',
-  'الرد والتفاعل',
-  'الأداء والسلوك',
-  'المرجعية الإسلامية/العلمية'
-];
-const NUM_JUDGES = 4;
-const NUM_MEMBERS = 3;
-
-let app, db, sessionRef, sessionCode;
-let myRole = null;
-let myJudgeNum = null;
-let myRequestId = null;
-let listeners = [];
-let adminSessionData = {};
-let judgeLocalScores = Array.from({length:2}, () => Array.from({length:3}, () => Array(5).fill(0)));
-let judgeLocalNotes = Array.from({length:2}, () => Array(3).fill(''));
-let judgeSubmitted = false;
-
-// ── Utilities ──
-function genCode() { return Math.random().toString(36).substring(2,8).toUpperCase(); }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function arabicNum(n) { return ['','الأول','الثاني','الثالث','الرابع'][n]||n; }
-function showOnly(id) {
-  ['screen-firebase','screen-landing','screen-admin','screen-judge','screen-waiting','screen-refused']
-    .forEach(s => { const el=document.getElementById(s); if(el) el.style.display = s===id?'':'none'; });
-}
-function toast(msg, type='info') {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'toast show '+type;
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), 3500);
-}
-function isConfigured() { return firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('REPLACE'); }
-
-// ── INIT ──
-window.addEventListener('DOMContentLoaded', () => {
-  if (!isConfigured()) { showOnly('screen-firebase'); return; }
-  try {
-    app = initializeApp(firebaseConfig);
-    db = getDatabase(app);
-    showOnly('screen-landing');
-    tryRestore();
-  } catch(e) { showOnly('screen-firebase'); }
-});
-
-// ────────────────────────────────────────────────────────────
-// SESSION RESTORE
-// ────────────────────────────────────────────────────────────
-async function tryRestore() {
-  const code = localStorage.getItem('dj_session');
-  const role = localStorage.getItem('dj_role');
-  if (!code || !role) return;
-  sessionCode = code;
-  sessionRef = ref(db, 'sessions/'+sessionCode);
-  const snap = await get(sessionRef);
-  if (!snap.exists()) { clearLocal(); return; }
-  const data = snap.val();
-  if (role === 'admin') {
-    const pwd = localStorage.getItem('dj_pwd');
-    if (data.adminPwd === pwd) { myRole='admin'; startAdmin(); }
-    else clearLocal();
-  } else if (role === 'judge') {
-    myJudgeNum = +localStorage.getItem('dj_judgenum');
-    myRequestId = localStorage.getItem('dj_reqid');
-    const saved = localStorage.getItem(`dj_sc_${code}_${myJudgeNum}`);
-    if (saved) try { judgeLocalScores = JSON.parse(saved); } catch(e){}
-    const savedN = localStorage.getItem(`dj_sn_${code}_${myJudgeNum}`);
-    if (savedN) try { judgeLocalNotes = JSON.parse(savedN); } catch(e){}
-    myRole='judge'; startJudge();
-  } else if (role === 'judge_pending') {
-    myRequestId = localStorage.getItem('dj_reqid');
-    showOnly('screen-waiting');
-    listenApproval();
-  }
-}
-function clearLocal() {
-  ['dj_session','dj_role','dj_pwd','dj_reqid','dj_name','dj_judgenum'].forEach(k=>localStorage.removeItem(k));
-}
-
-// ────────────────────────────────────────────────────────────
-// LANDING — Admin create
-// ────────────────────────────────────────────────────────────
-window.goCreate = async function() {
-  const pwd = document.getElementById('admin-pwd').value.trim();
-  if (!pwd) { toast('أدخل كلمة مرور للمسؤول','error'); return; }
-  const btn = document.getElementById('btn-create'); btn.disabled=true;
-  try {
-    sessionCode = genCode();
-    sessionRef = ref(db,'sessions/'+sessionCode);
-    const snap = await get(sessionRef);
-    if (snap.exists()) { toast('حاول مرة أخرى','error'); btn.disabled=false; return; }
-    await set(sessionRef, {
-      adminPwd: pwd,
-      status: 'waiting',
-      topic: 'التبرع بالأعضاء',
-      customTopic: '',
-      round: '1',
-      teamNames: ['الفريق الأول (مؤيد)','الفريق الثاني (معارض)'],
-      memberNames: [['المتناظر الأول','المتناظر الثاني','المتناظر الثالث'],['المتناظر الأول','المتناظر الثاني','المتناظر الثالث']],
-      judgeSlots: {1:null,2:null,3:null,4:null},
-      judgeNames: {1:'',2:'',3:'',4:''},
-      finalSubmitted: false
-    });
-    localStorage.setItem('dj_session',sessionCode);
-    localStorage.setItem('dj_role','admin');
-    localStorage.setItem('dj_pwd',pwd);
-    myRole='admin'; startAdmin();
-  } catch(e) { toast('خطأ: '+e.message,'error'); }
-  btn.disabled=false;
-};
-
-// Admin rejoin
-window.goRejoin = async function() {
-  const code = document.getElementById('rejoin-code').value.trim().toUpperCase();
-  const pwd = document.getElementById('rejoin-pwd').value.trim();
-  if (!code||!pwd) { toast('أدخل الرمز وكلمة المرور','error'); return; }
-  const btn = document.getElementById('btn-rejoin'); btn.disabled=true;
-  try {
-    sessionRef = ref(db,'sessions/'+code);
-    const snap = await get(sessionRef);
-    if (!snap.exists()) { toast('الجلسة غير موجودة','error'); btn.disabled=false; return; }
-    if (snap.val().adminPwd !== pwd) { toast('كلمة مرور خاطئة','error'); btn.disabled=false; return; }
-    sessionCode=code;
-    localStorage.setItem('dj_session',sessionCode);
-    localStorage.setItem('dj_role','admin');
-    localStorage.setItem('dj_pwd',pwd);
-    myRole='admin'; startAdmin();
-  } catch(e) { toast('خطأ: '+e.message,'error'); }
-  btn.disabled=false;
-};
-
-// Judge join request
-window.goJoin = async function() {
-  const code = document.getElementById('join-code').value.trim().toUpperCase();
-  const name = document.getElementById('judge-name-inp').value.trim();
-  if (!code) { toast('أدخل رمز الجلسة','error'); return; }
-  if (!name) { toast('أدخل اسمك','error'); return; }
-  const btn = document.getElementById('btn-join'); btn.disabled=true;
-  try {
-    sessionRef = ref(db,'sessions/'+code);
-    const snap = await get(sessionRef);
-    if (!snap.exists()) { toast('الجلسة غير موجودة','error'); btn.disabled=false; return; }
-    if (snap.val().status==='closed') { toast('الجلسة مغلقة','error'); btn.disabled=false; return; }
-    const newReq = await push(ref(db,'sessions/'+code+'/requests'), {
-      name, status:'pending', judgeNum:null, at:Date.now()
-    });
-    myRequestId = newReq.key;
-    sessionCode = code;
-    sessionRef = ref(db,'sessions/'+code);
-    localStorage.setItem('dj_session',code);
-    localStorage.setItem('dj_role','judge_pending');
-    localStorage.setItem('dj_reqid',myRequestId);
-    localStorage.setItem('dj_name',name);
-    showOnly('screen-waiting');
-    listenApproval();
-  } catch(e) { toast('خطأ: '+e.message,'error'); }
-  btn.disabled=false;
-};
-
-function listenApproval() {
-  const r = ref(db,'sessions/'+sessionCode+'/requests/'+myRequestId);
-  const unsub = onValue(r, snap => {
-    if (!snap.exists()) return;
-    const req = snap.val();
-    if (req.status==='approved') {
-      myJudgeNum = req.judgeNum;
-      localStorage.setItem('dj_judgenum',myJudgeNum);
-      localStorage.setItem('dj_role','judge');
-      myRole='judge';
-      toast('✅ تمت الموافقة! أنت الحكم '+arabicNum(myJudgeNum),'success');
-      startJudge();
-    } else if (req.status==='refused') {
-      showOnly('screen-refused');
-    }
-  });
-  listeners.push(unsub);
-}
-
-// ────────────────────────────────────────────────────────────
-// ADMIN VIEW
-// ────────────────────────────────────────────────────────────
-function startAdmin() {
-  showOnly('screen-admin');
-  document.getElementById('admin-code-display').textContent = sessionCode;
-  listeners.forEach(u=>u()); listeners=[];
-  const unsub = onValue(sessionRef, snap => {
-    if (!snap.exists()) return;
-    adminSessionData = snap.val();
-    renderAdmin(adminSessionData);
-  });
-  listeners.push(unsub);
-}
-
-function renderAdmin(data) {
-  // Status
-  const badges = {waiting:'⏳ في الانتظار',active:'🟢 نشطة',closed:'🔴 مغلقة'};
-  document.getElementById('admin-status-badge').textContent = badges[data.status]||data.status;
-  // Requests
-  renderRequests(data.requests||{}, data.judgeSlots||{});
-  // Slots
-  renderSlots(data.judgeSlots||{}, data.judgeNames||{});
-  // Scores
-  renderAdminScores(data);
-  // Final button
-  const fb = document.getElementById('btn-final');
-  fb.disabled = !!data.finalSubmitted;
-  fb.textContent = data.finalSubmitted ? '✅ تم الإرسال' : '🏁 إرسال النتيجة النهائية';
-  // Names (avoid replacing while typing)
-  for (let t=0;t<2;t++) {
-    const ti = document.getElementById('atn-'+t);
-    if (ti && document.activeElement!==ti) ti.value=(data.teamNames||[])[t]||'';
-    for (let m=0;m<NUM_MEMBERS;m++) {
-      const mi = document.getElementById(`amn-${t}-${m}`);
-      if (mi && document.activeElement!==mi) mi.value=((data.memberNames||[])[t]||[])[m]||'';
-    }
-  }
-  // final result
-  if (data.finalSubmitted) {
-    document.getElementById('final-section').style.display='';
-    renderFinalResult(data);
-  }
-}
-
-function renderRequests(requests, slots) {
-  const rows = Object.entries(requests);
-  let html = '';
-  if (!rows.length) { html='<div class="empty-note">لا توجد طلبات بعد. شارك الرمز مع الحكام.</div>'; }
-  rows.sort((a,b)=>((a[1].at||0)-(b[1].at||0)));
-  rows.forEach(([id,req]) => {
-    const cls = {pending:'req-pending',approved:'req-approved',refused:'req-refused'}[req.status]||'';
-    const badge = {
-      pending:`<span class="badge badge-yellow">⏳ معلق</span>`,
-      approved:`<span class="badge badge-green">✅ حكم ${arabicNum(req.judgeNum)}</span>`,
-      refused:`<span class="badge badge-red">✕ مرفوض</span>`
-    }[req.status]||'';
-    let actions='';
-    if (req.status==='pending') {
-      const opts = [1,2,3,4].map(n=>`<option value="${n}" ${slots[n]&&slots[n]!==id?'disabled':''}>حكم ${arabicNum(n)}</option>`).join('');
-      actions = `<select id="sl-${id}" class="slot-sel"><option value="">تعيين…</option>${opts}</select>
-        <button class="btn btn-approve btn-xs" onclick="approveReq('${id}')">✓ قبول</button>
-        <button class="btn btn-refuse btn-xs" onclick="refuseReq('${id}')">✕ رفض</button>`;
-    } else if (req.status==='approved') {
-      actions = `<button class="btn btn-xs btn-refuse" onclick="removeReq('${id}',${req.judgeNum})">إزالة</button>`;
-    } else {
-      actions = `<button class="btn btn-xs" onclick="delReq('${id}')">حذف</button>`;
-    }
-    html += `<div class="req-row ${cls}"><span class="req-name">${esc(req.name)}</span>
-      <div class="req-acts">${badge}${actions}</div></div>`;
-  });
-  document.getElementById('requests-list').innerHTML = html;
-}
-
-function renderSlots(slots, judgeNames) {
-  let html='';
-  for (let n=1;n<=4;n++) {
-    const filled = !!slots[n];
-    html+=`<div class="slot ${filled?'slot-filled':'slot-empty'}">
-      <span class="slot-n">${n}</span>
-      <span class="slot-lbl">${filled?esc(judgeNames[n]||'حكم '+arabicNum(n)):'شاغر'}</span>
-      <span class="slot-dot ${filled?'dot-green':'dot-gray'}"></span>
-    </div>`;
-  }
-  document.getElementById('judge-slots').innerHTML = html;
-}
-
-function renderAdminScores(data) {
-  const scores=data.scores||{}, teamNames=data.teamNames||['الفريق الأول','الفريق الثاني'];
-  const memberNames=data.memberNames||[['','',''],['','','']];
-  const judgeNames=data.judgeNames||{};
-  const submitted=data.submitted||{};
-  let html='';
-  // Judge submit status pills
-  html+='<div class="jsub-row">';
-  for(let j=1;j<=4;j++){
-    const done=submitted[j]===true;
-    html+=`<div class="jsub-pill ${done?'jsub-done':''}">${esc(judgeNames[j]||'حكم '+arabicNum(j))} ${done?'✅':'⏳'}</div>`;
-  }
-  html+='</div>';
-  // Scores per team
-  for(let t=0;t<2;t++){
-    const tt=calcTeamTotal(scores,t);
-    html+=`<div class="ascore-team ${t===0?'ascore-a':'ascore-b'}">
-      <div class="ascore-team-hdr">${esc(teamNames[t])} — ${tt}/300</div>`;
-    for(let m=0;m<NUM_MEMBERS;m++){
-      const mt=calcMemberTotal(scores,t,m);
-      const pct=Math.round(mt/100*100);
-      html+=`<div class="ascore-row">
-        <span class="ascore-name">${esc((memberNames[t]||[])[m]||'م'+(m+1))}</span>
-        <div class="ascore-bar-wrap"><div class="ascore-bar ${t===0?'bar-a':'bar-b'}" style="width:${pct}%"></div></div>
-        <span class="ascore-val">${mt}/100</span>
-      </div>`;
-    }
-    html+='</div>';
-  }
-  const a=calcTeamTotal(scores,0), b=calcTeamTotal(scores,1);
-  if(a>0||b>0){
-    const wt=a>b?`🏆 ${esc(teamNames[0])} يتقدم — ${a}/300`:b>a?`🏆 ${esc(teamNames[1])} يتقدم — ${b}/300`:`🤝 تعادل حالياً — ${a}/300`;
-    html+=`<div class="ascore-winner">${wt}</div>`;
-  }
-  document.getElementById('admin-scores').innerHTML=html||'<div class="empty-note">في انتظار الحكام…</div>';
-}
-
-function calcMemberTotal(scores,t,m){
-  let s=0;
-  for(let j=1;j<=4;j++){const sc=((scores[j]||[])[t]||[])[m]||[];s+=sc.reduce((a,b)=>a+b,0);}
-  return s;
-}
-function calcTeamTotal(scores,t){
-  let s=0; for(let m=0;m<NUM_MEMBERS;m++) s+=calcMemberTotal(scores,t,m); return s;
-}
-
-// Admin actions
-window.approveReq = async function(id) {
-  const sel=document.getElementById('sl-'+id);
-  const num=sel?+sel.value:0;
-  if(!num){toast('اختر رقم الحكم','error');return;}
-  const d=adminSessionData;
-  if((d.judgeSlots||{})[num]&&(d.judgeSlots||{})[num]!==id){toast('هذا المقعد محجوز','error');return;}
-  const snap=await get(ref(db,`sessions/${sessionCode}/requests/${id}`));
-  if(!snap.exists())return;
-  const req=snap.val();
-  await update(ref(db,`sessions/${sessionCode}/requests/${id}`),{status:'approved',judgeNum:num});
-  await update(ref(db,`sessions/${sessionCode}`),{[`judgeSlots/${num}`]:id,[`judgeNames/${num}`]:req.name});
-  toast(`✅ ${req.name} → حكم ${arabicNum(num)}`,'success');
-};
-window.refuseReq = async function(id) {
-  await update(ref(db,`sessions/${sessionCode}/requests/${id}`),{status:'refused'});
-  toast('تم رفض الطلب','error');
-};
-window.removeReq = async function(id,num) {
-  await update(ref(db,`sessions/${sessionCode}/requests/${id}`),{status:'pending',judgeNum:null});
-  await update(ref(db,`sessions/${sessionCode}`),{[`judgeSlots/${num}`]:null,[`judgeNames/${num}`]:''});
-  toast('تمت إزالة الحكم');
-};
-window.delReq = async function(id) {
-  await remove(ref(db,`sessions/${sessionCode}/requests/${id}`));
-};
-window.setStatus = async function(s) {
-  await update(sessionRef,{status:s});
-  const m={waiting:'⏳ في الانتظار',active:'🟢 الجلسة نشطة',closed:'🔴 الجلسة مغلقة'};
-  toast(m[s]||s);
-};
-window.setTopic = async function(v) {
-  await update(sessionRef,{topic:v});
-  document.getElementById('custom-row').style.display=v==='custom'?'':'none';
-};
-window.setCustomTopic = async function(v) { await update(sessionRef,{customTopic:v}); };
-window.setRound = async function(v) { await update(sessionRef,{round:v}); };
-window.setTeamName = async function(t,v) {
-  const tn=[...(adminSessionData.teamNames||['',''])];tn[t]=v;await update(sessionRef,{teamNames:tn});
-};
-window.setMemberName = async function(t,m,v) {
-  const mn=JSON.parse(JSON.stringify(adminSessionData.memberNames||[[],[]]));
-  if(!mn[t])mn[t]=[];mn[t][m]=v;await update(sessionRef,{memberNames:mn});
-};
-window.submitFinal = async function() {
-  if(!confirm('هل تريد إرسال النتيجة النهائية؟ لن يتمكن الحكام من التعديل.'))return;
-  await update(sessionRef,{finalSubmitted:true,status:'closed'});
-  toast('✅ النتيجة النهائية مُرسلة','success');
-};
-window.copyCode = function() {
-  navigator.clipboard.writeText(sessionCode).then(()=>toast('تم نسخ الرمز ✓','success'));
-};
-window.adminExport = function() { doExport(adminSessionData); };
-window.adminPrint = function() { doPrint(adminSessionData); };
-
-// ────────────────────────────────────────────────────────────
-// JUDGE VIEW
-// ────────────────────────────────────────────────────────────
-let judgeSessionData={};
-
-function startJudge() {
-  showOnly('screen-judge');
-  document.getElementById('j-num').textContent='الحكم '+arabicNum(myJudgeNum);
-  document.getElementById('j-code').textContent=sessionCode;
-  listeners.forEach(u=>u()); listeners=[];
-  const unsub=onValue(sessionRef,snap=>{
-    if(!snap.exists())return;
-    judgeSessionData=snap.val();
-    judgeSubmitted=(judgeSessionData.submitted||{})[myJudgeNum]===true;
-    renderJudge(judgeSessionData);
-  });
-  listeners.push(unsub);
-}
-
-function renderJudge(data) {
-  const tNames=data.teamNames||['الفريق الأول','الفريق الثاني'];
-  const mNames=data.memberNames||[['','',''],['','','']];
-  // topic
-  document.getElementById('j-topic').textContent=data.topic==='custom'?(data.customTopic||'—'):(data.topic||'—');
-  // status
-  const sb=document.getElementById('j-status');
-  const sc={waiting:'status-waiting',active:'status-active',closed:'status-closed'};
-  const st={waiting:'⏳ في انتظار بدء الجلسة',active:'🟢 الجلسة نشطة — يمكنك التسجيل',closed:'🔴 الجلسة مغلقة'};
-  sb.innerHTML=`<span class="status-chip ${sc[data.status]||''}">${st[data.status]||data.status}</span>`;
-  // submit button
-  const btn=document.getElementById('btn-jsub');
-  btn.disabled=judgeSubmitted||data.finalSubmitted;
-  btn.textContent=(judgeSubmitted||data.finalSubmitted)?'✅ تم الإرسال':'✅ إرسال درجاتي النهائية';
-
-  // Scoring area
-  let html='';
-  for(let t=0;t<2;t++){
-    html+=`<div class="team-card">
-      <div class="team-hdr ${t===0?'thdr-a':'thdr-b'}">
-        <span class="t-name">${esc(tNames[t])}</span>
-      </div>`;
-    for(let m=0;m<NUM_MEMBERS;m++){
-      const ms=judgeLocalScores[t][m].reduce((a,b)=>a+b,0);
-      const dis=(judgeSubmitted||data.finalSubmitted)?'disabled':'';
-      html+=`<div class="member-blk">
-        <div class="mem-name-row">
-          <span class="mem-idx">م${m+1}</span>
-          <span class="mem-txt">${esc((mNames[t]||[])[m]||'المتناظر '+(m+1))}</span>
-          <span class="mem-score ${t===0?'chip-a':'chip-b'}" id="ls-${t}-${m}">${ms}/25</span>
-        </div>
-        <table class="crit-tbl">`;
-      for(let c=0;c<5;c++){
-        const cur=judgeLocalScores[t][m][c];
-        html+=`<tr><td class="crit-name-cell">${CRITERIA[c]}</td><td><div class="score-btns">`;
-        for(let v=0;v<=5;v++){
-          const sel=cur===v?(t===0?' sel-a':' sel-b'):'';
-          html+=`<button class="sbtn${sel}" data-t="${t}" data-m="${m}" data-c="${c}" data-v="${v}" ${dis}>${v}</button>`;
-        }
-        html+=`</div></td></tr>`;
-      }
-      html+=`</table>
-        <textarea class="notes-ta" rows="1" data-t="${t}" data-m="${m}" placeholder="ملاحظات…" ${dis}>${esc(judgeLocalNotes[t][m])}</textarea>
-      </div>`;
-    }
-    let tsub=0; for(let m=0;m<NUM_MEMBERS;m++) tsub+=judgeLocalScores[t][m].reduce((a,b)=>a+b,0);
-    html+=`<div class="team-sub ${t===0?'tsub-a':'tsub-b'}" id="tsub-${t}">مجموع الفريق: <strong>${tsub}/75</strong></div>
-    </div>`;
-  }
-  const area=document.getElementById('j-scoring');
-  area.innerHTML=html;
-
-  // Events
-  area.querySelectorAll('.sbtn').forEach(btn=>{
-    btn.addEventListener('click',function(){
-      if(judgeSubmitted||judgeSessionData.finalSubmitted)return;
-      const t=+this.dataset.t,m=+this.dataset.m,c=+this.dataset.c,v=+this.dataset.v;
-      judgeLocalScores[t][m][c]=v;
-      area.querySelectorAll(`.sbtn[data-t="${t}"][data-m="${m}"][data-c="${c}"]`).forEach(b=>{
-        b.classList.remove('sel-a','sel-b');
-        if(+b.dataset.v===v) b.classList.add(t===0?'sel-a':'sel-b');
-      });
-      const ms=judgeLocalScores[t][m].reduce((a,b)=>a+b,0);
-      const lsel=document.getElementById(`ls-${t}-${m}`);
-      if(lsel)lsel.textContent=ms+'/25';
-      let tsub=0;for(let mm=0;mm<NUM_MEMBERS;mm++)tsub+=judgeLocalScores[t][mm].reduce((a,b)=>a+b,0);
-      const tse=document.getElementById(`tsub-${t}`);
-      if(tse)tse.innerHTML=`مجموع الفريق: <strong>${tsub}/75</strong>`;
-      localStorage.setItem(`dj_sc_${sessionCode}_${myJudgeNum}`,JSON.stringify(judgeLocalScores));
-    });
-  });
-  area.querySelectorAll('.notes-ta').forEach(ta=>{
-    ta.addEventListener('input',function(){
-      judgeLocalNotes[+this.dataset.t][+this.dataset.m]=this.value;
-      localStorage.setItem(`dj_sn_${sessionCode}_${myJudgeNum}`,JSON.stringify(judgeLocalNotes));
-    });
-  });
-}
-
-window.judgeSubmit = async function() {
-  if(!confirm('هل تريد إرسال درجاتك النهائية؟ لن تتمكن من التعديل.'))return;
-  if(judgeSessionData.status!=='active'){toast('الجلسة غير نشطة','error');return;}
-  const btn=document.getElementById('btn-jsub'); btn.disabled=true;
-  try{
-    await update(sessionRef,{
-      [`scores/${myJudgeNum}`]:judgeLocalScores,
-      [`notes/${myJudgeNum}`]:judgeLocalNotes,
-      [`submitted/${myJudgeNum}`]:true
-    });
-    judgeSubmitted=true;
-    btn.textContent='✅ تم الإرسال';
-    toast('✅ تم إرسال درجاتك بنجاح','success');
-  }catch(e){toast('خطأ: '+e.message,'error');btn.disabled=false;}
-};
-
-// ────────────────────────────────────────────────────────────
-// FINAL RESULT
-// ────────────────────────────────────────────────────────────
-function renderFinalResult(data){
-  const scores=data.scores||{};
-  const tNames=data.teamNames||['الفريق الأول','الفريق الثاني'];
-  const mNames=data.memberNames||[['','',''],['','','']];
-  const a=calcTeamTotal(scores,0),b=calcTeamTotal(scores,1);
-  let whtml='';
-  if(a>b) whtml=`<div class="fr-winner fr-a">🏆 الفائز: ${esc(tNames[0])} — ${a}/300</div>`;
-  else if(b>a) whtml=`<div class="fr-winner fr-b">🏆 الفائز: ${esc(tNames[1])} — ${b}/300</div>`;
-  else whtml=`<div class="fr-winner fr-draw">🤝 تعادل — ${a}/300</div>`;
-  let html=whtml;
-  for(let t=0;t<2;t++){
-    html+=`<div class="fr-team ${t===0?'fr-team-a':'fr-team-b'}">
-      <div class="fr-team-ttl">${esc(tNames[t])} — ${calcTeamTotal(scores,t)}/300</div>`;
-    for(let m=0;m<NUM_MEMBERS;m++){
-      html+=`<div class="fr-mem-row"><span>${esc((mNames[t]||[])[m]||'م'+(m+1))}</span>
-        <span class="fr-mem-score">${calcMemberTotal(scores,t,m)}/100</span></div>`;
-    }
-    html+='</div>';
-  }
-  document.getElementById('final-result-body').innerHTML=html;
-}
-
-// ────────────────────────────────────────────────────────────
-// EXPORT / PRINT
-// ────────────────────────────────────────────────────────────
-function doExport(data){
-  const scores=data.scores||{},tNames=data.teamNames||['',''],mNames=data.memberNames||[[],[]];
-  const judgeNames=data.judgeNames||{};
-  const topic=data.topic==='custom'?(data.customTopic||'—'):(data.topic||'—');
-  const rmap={'1':'الجولة الأولى','2':'الجولة الثانية','3':'الجولة الثالثة','final':'النهائية'};
-  let L=['═══════════════════════════════════','     منصة تحكيم المناظرات العربية','═══════════════════════════════════',
-    'الموضوع: '+topic,'الجولة: '+(rmap[data.round]||data.round),''];
-  for(let j=1;j<=4;j++){
-    L.push('───────────────────────────────────');
-    L.push('الحكم: '+(judgeNames[j]||'حكم '+arabicNum(j)));
-    for(let t=0;t<2;t++){
-      L.push('  الفريق: '+tNames[t]);
-      for(let m=0;m<NUM_MEMBERS;m++){
-        const sc=((scores[j]||[])[t]||[])[m]||[];
-        L.push('    '+(((mNames[t]||[])[m])||'م'+(m+1))+': '+sc.reduce((a,b)=>a+b,0)+'/25');
-        CRITERIA.forEach((c,i)=>L.push('      '+c+': '+(sc[i]||0)+'/5'));
-      }
-    }
-    L.push('');
-  }
-  L.push('═══════════════════════════════════','النتائج الإجمالية','═══════════════════════════════════');
-  for(let t=0;t<2;t++){
-    L.push(tNames[t]+': '+calcTeamTotal(scores,t)+'/300');
-    for(let m=0;m<NUM_MEMBERS;m++) L.push('  '+((mNames[t]||[])[m]||'م'+(m+1))+': '+calcMemberTotal(scores,t,m)+'/100');
-  }
-  const a=calcTeamTotal(scores,0),b=calcTeamTotal(scores,1);
-  L.push('');L.push(a>b?'🏆 الفائز: '+tNames[0]:b>a?'🏆 الفائز: '+tNames[1]:'🤝 تعادل');
-  navigator.clipboard.writeText(L.join('\n')).then(()=>toast('تم النسخ ✓','success'));
-}
-
-function doPrint(data){
-  const scores=data.scores||{},tNames=data.teamNames||['',''],mNames=data.memberNames||[[],[]];
-  const judgeNames=data.judgeNames||{};
-  const topic=data.topic==='custom'?(data.customTopic||'—'):(data.topic||'—');
-  let win=window.open('','_blank');
-  let H=`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>نتائج المناظرة</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>body{font-family:'Cairo',sans-serif;direction:rtl;padding:20px;font-size:12px}
-    h1{text-align:center;font-size:18px;margin-bottom:4px}.meta{text-align:center;color:#666;font-size:12px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse;margin:8px 0}th,td{border:1px solid #ccc;padding:4px 7px;text-align:right}
-    th{background:#f0f0f0;font-weight:700}.jh{background:#111;color:#fff;font-size:13px;font-weight:900;padding:6px 10px;margin:14px 0 4px}
-    .ta{color:#0C447C;font-weight:700}.tb{color:#3C3489;font-weight:700}
-    .winner{text-align:center;font-size:15px;font-weight:900;padding:10px;border:2px solid #111;margin:14px 0}</style>
-    </head><body><h1>⚖️ نتائج المناظرة</h1><div class="meta">${esc(topic)}</div>`;
-  for(let j=1;j<=4;j++){
-    H+=`<div class="jh">${esc(judgeNames[j]||'حكم '+arabicNum(j))}</div>
-    <table><thead><tr><th>الفريق</th><th>المتناظر</th>`;
-    CRITERIA.forEach(c=>H+=`<th>${esc(c)}</th>`);
-    H+=`<th>/25</th></tr></thead><tbody>`;
-    for(let t=0;t<2;t++){
-      for(let m=0;m<NUM_MEMBERS;m++){
-        const sc=((scores[j]||[])[t]||[])[m]||[];
-        H+=`<tr><td class="${t===0?'ta':'tb'}">${esc(tNames[t])}</td><td>${esc((mNames[t]||[])[m]||'م'+(m+1))}</td>`;
-        CRITERIA.forEach((_,i)=>H+=`<td style="text-align:center">${sc[i]||0}</td>`);
-        H+=`<td style="text-align:center;font-weight:900">${sc.reduce((a,b)=>a+b,0)}</td></tr>`;
-      }
-    }
-    H+='</tbody></table>';
-  }
-  const a=calcTeamTotal(scores,0),b=calcTeamTotal(scores,1);
-  const wt=a>b?`🏆 ${tNames[0]} — ${a}/300`:b>a?`🏆 ${tNames[1]} — ${b}/300`:`🤝 تعادل — ${a}/300`;
-  H+=`<div class="winner">${esc(wt)}</div><script>window.onload=()=>window.print()<\/script></body></html>`;
-  win.document.write(H); win.document.close();
-}
-
-window.goBack = function(){ clearLocal(); location.reload(); };
-</script>
-
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@700;900&display=swap" rel="stylesheet">
 <style>
-:root{--a-bg:#E6F1FB;--a-txt:#0C447C;--a-acc:#1565C0;--b-bg:#EEEDFE;--b-txt:#3C3489;--b-acc:#4527A0;--green:#1B5E20;--green-bg:#E8F5E9;--red:#B71C1C;--red-bg:#FFEBEE;--font:'Cairo','Tajawal',sans-serif}
+:root{
+  --a-bg:#E6F1FB;--a-txt:#0C447C;--a-acc:#1565C0;
+  --b-bg:#EEEDFE;--b-txt:#3C3489;--b-acc:#4527A0;
+  --green:#1B5E20;--green-bg:#E8F5E9;
+  --red:#B71C1C;--red-bg:#FFEBEE;
+  --font:'Cairo','Tajawal',sans-serif;
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);direction:rtl;background:#F3F4F8;color:#111;font-size:14px;min-height:100vh}
-[id^="screen-"]{display:none}
+
+/* ALL SCREENS HIDDEN BY DEFAULT */
+.screen{display:none}
 
 /* Toast */
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#111;color:#fff;padding:10px 22px;border-radius:6px;font-size:13px;font-weight:600;opacity:0;transition:.3s;z-index:9999;pointer-events:none;white-space:nowrap}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:#111;color:#fff;padding:10px 22px;border-radius:6px;font-size:13px;
+  font-weight:600;opacity:0;transition:.3s;z-index:9999;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.success{background:var(--green)}.toast.error{background:var(--red)}.toast.info{background:#0C447C}
 
-/* Inputs / buttons */
-input,select,textarea{font-family:var(--font);font-size:13px;border:1.5px solid #ccc;border-radius:5px;padding:7px 11px;direction:rtl;background:#fff;color:#111;width:100%}
+/* Common inputs/buttons */
+input,select,textarea{font-family:var(--font);font-size:13px;border:1.5px solid #ccc;
+  border-radius:5px;padding:7px 11px;direction:rtl;background:#fff;color:#111;width:100%}
 input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
-.btn{font-family:var(--font);font-size:13px;font-weight:700;border:1.5px solid #111;border-radius:5px;padding:8px 16px;cursor:pointer;background:#fff;color:#111;transition:.15s;white-space:nowrap;display:inline-block}
+.btn{font-family:var(--font);font-size:13px;font-weight:700;border:1.5px solid #111;
+  border-radius:5px;padding:8px 16px;cursor:pointer;background:#fff;color:#111;
+  transition:.15s;white-space:nowrap;display:inline-block}
 .btn:hover:not(:disabled){background:#111;color:#fff}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-black{background:#111;color:#fff}.btn-black:hover:not(:disabled){background:#333}
-.btn-approve{border-color:var(--green);color:var(--green)}.btn-approve:hover:not(:disabled){background:var(--green);color:#fff}
-.btn-refuse{border-color:var(--red);color:var(--red)}.btn-refuse:hover:not(:disabled){background:var(--red);color:#fff}
+.btn-green{border-color:var(--green);color:var(--green)}.btn-green:hover:not(:disabled){background:var(--green);color:#fff}
+.btn-red{border-color:var(--red);color:var(--red)}.btn-red:hover:not(:disabled){background:var(--red);color:#fff}
 .btn-xs{font-size:11px;padding:4px 10px}
 .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:3px}
-.badge-yellow{background:#FFF8E1;color:#E65100}.badge-green{background:var(--green-bg);color:var(--green)}.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-y{background:#FFF8E1;color:#E65100}
+.badge-g{background:var(--green-bg);color:var(--green)}
+.badge-r{background:var(--red-bg);color:var(--red)}
 
-/* ── FIREBASE SCREEN ── */
-#screen-firebase{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:#F3F4F8}
+/* ── FIREBASE SETUP ── */
+#screen-firebase{align-items:center;justify-content:center;min-height:100vh;padding:20px;background:#F3F4F8}
 .fb-box{max-width:580px;background:#fff;border:2px solid #111;border-radius:10px;padding:28px}
 .fb-box h2{font-size:19px;font-weight:900;margin-bottom:10px}
 .fb-box p,.fb-box li{font-size:13px;color:#444;line-height:2}
@@ -636,7 +54,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
 .fb-note{background:#FFF8E1;border:1px solid #F9A825;border-radius:4px;padding:10px 14px;font-size:12px;color:#555}
 
 /* ── LANDING ── */
-#screen-landing{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+#screen-landing{align-items:center;justify-content:center;min-height:100vh;padding:20px}
 .land-wrap{width:100%;max-width:520px}
 .land-logo{text-align:center;margin-bottom:26px}
 .land-logo h1{font-size:22px;font-weight:900}
@@ -653,24 +71,27 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
 .helper-txt{font-size:12px;color:#999;margin-top:6px}
 
 /* ── WAITING / REFUSED ── */
-#screen-waiting,#screen-refused{display:flex;align-items:center;justify-content:center;min-height:100vh}
+#screen-waiting,#screen-refused{align-items:center;justify-content:center;min-height:100vh}
 .wait-box,.refused-box{text-align:center;background:#fff;border:2px solid #111;border-radius:10px;padding:38px 28px;max-width:360px;width:90%}
-.wait-box h2{font-size:18px;font-weight:900;margin-bottom:12px}
-.wait-box p{font-size:13px;color:#666;line-height:1.9}
+.wait-box h2,.refused-box h2{font-size:18px;font-weight:900;margin-bottom:12px}
+.refused-box h2{color:var(--red)}
+.wait-box p,.refused-box p{font-size:13px;color:#666;line-height:1.9}
+.refused-box p{margin-bottom:18px}
 .spinner{width:38px;height:38px;border:3px solid #e0e0e0;border-top-color:#111;border-radius:50%;animation:spin 1s linear infinite;margin:18px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
-.refused-box h2{color:var(--red);font-size:18px;font-weight:900;margin-bottom:12px}
-.refused-box p{font-size:13px;color:#666;margin-bottom:18px}
 
-/* ── TOP BAR ── */
-.topbar{background:#111;color:#fff;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:100}
+/* ── TOPBAR ── */
+.topbar{background:#111;color:#fff;padding:11px 20px;display:flex;align-items:center;
+  justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:100}
 .topbar h1{font-size:14px;font-weight:900}
 .topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.code-chip{background:#fff;color:#111;border:none;border-radius:4px;padding:4px 13px;font-weight:900;font-size:15px;letter-spacing:2px;cursor:pointer;font-family:var(--font)}
+.code-chip{background:#fff;color:#111;border:none;border-radius:4px;padding:4px 13px;
+  font-weight:900;font-size:15px;letter-spacing:2px;cursor:pointer;font-family:var(--font)}
 .code-chip:hover{background:#e0e0e0}
 .status-bdg{font-size:12px;padding:4px 10px;border-radius:3px;font-weight:700;background:#333;color:#fff}
 .tbtn{font-size:12px;padding:5px 12px;border-color:#555;color:#ccc;background:transparent}
 .tbtn:hover:not(:disabled){background:#333;color:#fff;border-color:#333}
+.info-chip{background:#333;color:#fff;border-radius:4px;padding:3px 10px;font-size:12px;font-weight:700}
 
 /* ── ADMIN BODY ── */
 .abody{padding:16px;max-width:1100px;margin:0 auto}
@@ -682,29 +103,26 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
 .sess-ctrl{padding:13px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .sess-ctrl-note{font-size:12px;color:#999}
 
-/* requests */
+/* Requests */
 .req-row{padding:10px 14px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .req-row:last-child{border-bottom:none}
-.req-pending{background:#FFFBF0}
-.req-approved{background:#F1FBF4}
-.req-refused{background:#FFF5F5}
+.req-pending{background:#FFFBF0}.req-approved{background:#F1FBF4}.req-refused{background:#FFF5F5}
 .req-name{font-weight:700;font-size:13px}
 .req-acts{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .slot-sel{width:auto;min-width:90px;font-size:12px;padding:4px 8px}
 .empty-note{padding:20px;text-align:center;color:#bbb;font-size:13px}
 
-/* judge slots */
+/* Judge slots */
 .slots-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px}
 @media(max-width:450px){.slots-grid{grid-template-columns:repeat(2,1fr)}}
 .slot{border:1.5px solid;border-radius:6px;padding:10px 6px;text-align:center}
-.slot-filled{border-color:#111;background:#f9f9f9}
-.slot-empty{border-color:#ddd;background:#fff}
+.slot-filled{border-color:#111;background:#f9f9f9}.slot-empty{border-color:#ddd;background:#fff}
 .slot-n{display:block;font-size:22px;font-weight:900;margin-bottom:3px}
 .slot-lbl{display:block;font-size:11px;color:#666;margin-bottom:7px;min-height:28px;word-break:break-all}
 .slot-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 .dot-green{background:#1B5E20}.dot-gray{background:#ccc}
 
-/* settings */
+/* Settings & Names */
 .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px}
 @media(max-width:480px){.settings-grid{grid-template-columns:1fr}}
 .settings-grid label{font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px}
@@ -716,7 +134,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
 .nrow span{font-size:11px;font-weight:700;color:#bbb;white-space:nowrap}
 .nrow input{font-size:12px;padding:5px 8px}
 
-/* admin scores */
+/* Admin scores */
 .jsub-row{display:flex;gap:7px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid #f0f0f0}
 .jsub-pill{font-size:11px;font-weight:700;padding:4px 10px;border-radius:3px;background:#f0f0f0;color:#666;border:1px solid #ddd}
 .jsub-done{background:var(--green-bg);color:var(--green);border-color:var(--green)}
@@ -732,11 +150,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
 .bar-a{background:var(--a-acc)}.bar-b{background:var(--b-acc)}
 .ascore-val{font-size:12px;font-weight:900;width:55px;text-align:center;flex-shrink:0}
 .ascore-winner{text-align:center;font-weight:900;font-size:13px;padding:9px;background:#f9f9f9;border-radius:5px;border:1.5px solid #e0e0e0;margin-top:8px}
-.final-sub-bar{padding:13px 14px;background:#f9f9f9;border-top:1.5px solid #eee;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.final-sub-bar{padding:13px 14px;background:#f9f9f9;border-top:1.5px solid #eee;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .final-sub-bar p{font-size:12px;color:#777;max-width:380px;line-height:1.7}
 
-/* final result */
-#final-section{margin-bottom:14px}
+/* Final result */
 .fr-winner{text-align:center;font-weight:900;font-size:16px;padding:12px;border-radius:6px;margin-bottom:10px}
 .fr-a{background:var(--a-bg);color:var(--a-txt);border:2px solid var(--a-acc)}
 .fr-b{background:var(--b-bg);color:var(--b-txt);border:2px solid var(--b-acc)}
@@ -750,7 +167,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
 .fr-actions{padding:0 14px 14px;display:flex;gap:8px}
 
 /* ── JUDGE SCREEN ── */
-#screen-judge{display:none}
 .jbody{padding:14px;max-width:920px;margin:0 auto}
 .j-topic-bar{background:#fff;border:1.5px solid #ddd;border-radius:6px;padding:9px 14px;margin-bottom:12px;font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .j-topic-lbl{font-weight:700;color:#999;font-size:12px}
@@ -762,69 +178,62 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
 @media(max-width:640px){.teams-grid{grid-template-columns:1fr}}
 .team-card{background:#fff;border:1.5px solid #ddd;border-radius:7px;overflow:hidden}
 .team-hdr{padding:10px 13px}
-.thdr-a{background:var(--a-bg);color:var(--a-txt)}
-.thdr-b{background:var(--b-bg);color:var(--b-txt)}
+.thdr-a{background:var(--a-bg);color:var(--a-txt)}.thdr-b{background:var(--b-bg);color:var(--b-txt)}
 .t-name{font-weight:800;font-size:14px}
 .member-blk{border-top:1px solid #eee;padding:10px 12px}
 .mem-name-row{display:flex;align-items:center;gap:7px;margin-bottom:8px}
 .mem-idx{font-size:11px;font-weight:700;color:#ccc;white-space:nowrap}
 .mem-txt{font-weight:700;font-size:13px;flex:1}
 .mem-score{font-size:12px;font-weight:900;padding:2px 8px;border-radius:3px}
-.chip-a{background:var(--a-bg);color:var(--a-txt)}
-.chip-b{background:var(--b-bg);color:var(--b-txt)}
+.chip-a{background:var(--a-bg);color:var(--a-txt)}.chip-b{background:var(--b-bg);color:var(--b-txt)}
 .crit-tbl{width:100%;border-collapse:collapse}
 .crit-tbl tr{border-top:1px solid #f5f5f5}
 .crit-tbl td{padding:3px 0;vertical-align:middle}
 .crit-name-cell{font-size:11px;color:#444;font-weight:600;width:55%;padding-left:6px}
 .score-btns{display:flex;gap:3px;justify-content:flex-end}
-.sbtn{width:26px;height:26px;border:1.5px solid #ddd;border-radius:3px;background:#fff;cursor:pointer;font-size:11px;font-weight:700;color:#888;display:flex;align-items:center;justify-content:center;transition:.1s;font-family:var(--font);padding:0;flex-shrink:0}
+.sbtn{width:26px;height:26px;border:1.5px solid #ddd;border-radius:3px;background:#fff;cursor:pointer;
+  font-size:11px;font-weight:700;color:#888;display:flex;align-items:center;justify-content:center;
+  transition:.1s;font-family:var(--font);padding:0;flex-shrink:0}
 .sbtn:hover:not([disabled]){border-color:#555;color:#111}
 .sbtn[disabled]{cursor:not-allowed;opacity:.6}
 .sel-a{background:var(--a-acc)!important;border-color:var(--a-acc)!important;color:#fff!important}
 .sel-b{background:var(--b-acc)!important;border-color:var(--b-acc)!important;color:#fff!important}
-.notes-ta{width:100%;font-family:var(--font);font-size:12px;direction:rtl;border:1px solid #e8e8e8;border-radius:3px;padding:4px 7px;resize:none;margin-top:7px;color:#555;background:#fafafa;outline:none}
+.notes-ta{width:100%;font-family:var(--font);font-size:12px;direction:rtl;border:1px solid #e8e8e8;
+  border-radius:3px;padding:4px 7px;resize:none;margin-top:7px;color:#555;background:#fafafa;outline:none}
 .notes-ta:focus{border-color:#999;background:#fff}
 .team-sub{padding:8px 12px;font-size:13px;font-weight:600;text-align:center}
-.tsub-a{background:var(--a-bg);color:var(--a-txt)}
-.tsub-b{background:var(--b-bg);color:var(--b-txt)}
+.tsub-a{background:var(--a-bg);color:var(--a-txt)}.tsub-b{background:var(--b-bg);color:var(--b-txt)}
 .j-submit-bar{margin:14px 0;padding:13px 16px;background:#fff;border:2px solid #111;border-radius:7px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .j-submit-bar p{font-size:12px;color:#777;line-height:1.8;max-width:420px}
 #btn-jsub{font-size:14px;padding:10px 22px}
-.info-chip{background:#333;color:#fff;border-radius:4px;padding:3px 10px;font-size:12px;font-weight:700}
 </style>
 </head>
 <body>
+
 <div id="toast" class="toast"></div>
 
 <!-- ══ FIREBASE SETUP ══ -->
-<div id="screen-firebase">
+<div id="screen-firebase" class="screen" style="display:flex">
   <div class="fb-box">
     <h2>⚙️ إعداد Firebase مطلوب</h2>
-    <p>هذه المنصة تستخدم <strong>Firebase Realtime Database</strong> للمزامنة الفورية بين أجهزة الحكام والمسؤول.</p>
+    <p>تحتاج إلى إدخال إعدادات Firebase الخاصة بمشروعك في الكود.</p>
     <ol>
-      <li>افتح <strong>console.firebase.google.com</strong> وسجّل دخولك بحساب Google</li>
-      <li>اضغط <strong>"Add project"</strong> وأدخل أي اسم للمشروع</li>
-      <li>من القائمة الجانبية: <strong>Build → Realtime Database → Create Database</strong></li>
-      <li>اختر <strong>"Start in test mode"</strong> ثم Enable</li>
-      <li>من Project Settings (⚙️) → General → Your apps → اضغط <code>&lt;/&gt;</code> لإضافة تطبيق ويب</li>
-      <li>انسخ كائن <code>firebaseConfig</code> الظاهر أمامك</li>
-      <li>افتح ملف <code>index.html</code> بأي محرر نصوص (Notepad, VS Code…)</li>
-      <li>ابحث عن <code>firebaseConfig = {</code> في السطر ~14 واستبدل القيم</li>
-      <li>احفظ الملف وأعد تحميل الصفحة</li>
+      <li>افتح <strong>console.firebase.google.com</strong></li>
+      <li>أنشئ مشروعاً → <strong>Realtime Database → Create → Test mode</strong></li>
+      <li>Project Settings ⚙️ → Your apps → <code>&lt;/&gt;</code> → Register → انسخ <code>firebaseConfig</code></li>
+      <li>افتح <code>index.html</code> بـ Notepad واستبدل قيم الـ config</li>
     </ol>
-    <div class="fb-note">💡 <strong>Firebase Spark Plan مجاني تماماً</strong> — لا يحتاج بطاقة ائتمان. يدعم حتى 100 اتصال متزامن وهو أكثر من كافٍ للمناظرات.</div>
+    <div class="fb-note">💡 Firebase Spark Plan مجاني تماماً — لا يحتاج بطاقة ائتمان.</div>
   </div>
 </div>
 
 <!-- ══ LANDING ══ -->
-<div id="screen-landing">
+<div id="screen-landing" class="screen" style="display:none">
   <div class="land-wrap">
     <div class="land-logo">
       <h1>⚖️ منصة تحكيم المناظرات العربية</h1>
       <p>نظام متعدد الأجهزة — مزامنة فورية بين الحكام</p>
     </div>
-
-    <!-- Admin -->
     <div class="land-card">
       <div class="land-card-hdr">👑 إنشاء جلسة جديدة (المسؤول)</div>
       <div class="land-card-body">
@@ -840,8 +249,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
         </div>
       </div>
     </div>
-
-    <!-- Judge -->
     <div class="land-card">
       <div class="land-card-hdr">🧑‍⚖️ الانضمام كحكم</div>
       <div class="land-card-body">
@@ -850,23 +257,23 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
           <input type="text" id="judge-name-inp" placeholder="اسمك الكامل">
           <button class="btn" style="background:var(--a-acc);border-color:var(--a-acc);color:#fff" id="btn-join" onclick="goJoin()">طلب انضمام</button>
         </div>
-        <p class="helper-txt">أدخل رمز الجلسة الذي أرسله المسؤول، وانتظر الموافقة.</p>
+        <p class="helper-txt">أدخل رمز الجلسة الذي أرسله المسؤول وانتظر الموافقة.</p>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ══ WAITING ══ -->
-<div id="screen-waiting">
+<div id="screen-waiting" class="screen" style="display:none">
   <div class="wait-box">
     <h2>⏳ في انتظار الموافقة</h2>
     <div class="spinner"></div>
-    <p>تم إرسال طلبك إلى مسؤول الجلسة.<br>سيتم إخطارك فور الموافقة وتعيينك كحكم.<br><br>أبقِ هذه الصفحة مفتوحة.</p>
+    <p>تم إرسال طلبك إلى مسؤول الجلسة.<br>سيتم إخطارك فور الموافقة.<br><br>أبقِ هذه الصفحة مفتوحة.</p>
   </div>
 </div>
 
 <!-- ══ REFUSED ══ -->
-<div id="screen-refused">
+<div id="screen-refused" class="screen" style="display:none">
   <div class="refused-box">
     <h2>✕ تم رفض طلبك</h2>
     <p>عذراً، رفض المسؤول طلب انضمامك إلى هذه الجلسة.</p>
@@ -875,7 +282,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
 </div>
 
 <!-- ══ ADMIN SCREEN ══ -->
-<div id="screen-admin">
+<div id="screen-admin" class="screen" style="display:none">
   <div class="topbar">
     <h1>👑 لوحة المسؤول</h1>
     <div class="topbar-right">
@@ -887,23 +294,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
       <button class="btn tbtn" onclick="goBack()">خروج</button>
     </div>
   </div>
-
   <div class="abody">
-    <!-- Session control -->
     <div class="asec">
       <div class="asec-hdr"><span>🎛️ حالة الجلسة</span></div>
       <div class="sess-ctrl">
         <button class="btn" onclick="setStatus('waiting')">⏳ انتظار</button>
-        <button class="btn btn-approve" onclick="setStatus('active')">🟢 تفعيل</button>
-        <button class="btn btn-refuse" onclick="setStatus('closed')">🔴 إغلاق</button>
+        <button class="btn btn-green" onclick="setStatus('active')">🟢 تفعيل</button>
+        <button class="btn btn-red" onclick="setStatus('closed')">🔴 إغلاق</button>
         <span class="sess-ctrl-note">فعّل الجلسة حتى يتمكن الحكام من إرسال درجاتهم</span>
       </div>
     </div>
-
     <div class="agrid">
-      <!-- LEFT -->
       <div>
-        <!-- Requests -->
         <div class="asec">
           <div class="asec-hdr">
             <span>📩 طلبات الانضمام</span>
@@ -911,20 +313,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
           </div>
           <div id="requests-list"><div class="empty-note">لا توجد طلبات بعد</div></div>
         </div>
-
-        <!-- Slots -->
         <div class="asec">
           <div class="asec-hdr"><span>🧑‍⚖️ مقاعد الحكام</span></div>
           <div class="slots-grid" id="judge-slots"></div>
         </div>
-
-        <!-- Settings -->
         <div class="asec">
           <div class="asec-hdr"><span>⚙️ إعدادات المناظرة</span></div>
           <div class="settings-grid">
             <div>
               <label>الموضوع</label>
-              <select onchange="setTopic(this.value)">
+              <select id="topic-sel" onchange="setTopic(this.value)">
                 <option value="التبرع بالأعضاء">التبرع بالأعضاء</option>
                 <option value="البنوك الحديثة والربا">البنوك الحديثة والربا</option>
                 <option value="الذكاء الاصطناعي والأخلاق">الذكاء الاصطناعي والأخلاق</option>
@@ -932,12 +330,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
                 <option value="custom">موضوع مخصص…</option>
               </select>
               <div id="custom-row" style="display:none;margin-top:6px">
-                <input type="text" placeholder="اكتب الموضوع" onchange="setCustomTopic(this.value)">
+                <input type="text" id="custom-topic-inp" placeholder="اكتب الموضوع" oninput="setCustomTopic(this.value)">
               </div>
             </div>
             <div>
               <label>الجولة</label>
-              <select onchange="setRound(this.value)">
+              <select id="round-sel" onchange="setRound(this.value)">
                 <option value="1">الجولة الأولى</option>
                 <option value="2">الجولة الثانية</option>
                 <option value="3">الجولة الثالثة</option>
@@ -946,8 +344,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
             </div>
           </div>
         </div>
-
-        <!-- Names -->
         <div class="asec">
           <div class="asec-hdr"><span>👥 أسماء الفرق والمتناظرين</span></div>
           <div class="names-grid">
@@ -968,25 +364,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
           </div>
         </div>
       </div>
-
-      <!-- RIGHT -->
       <div>
-        <!-- Live Scores -->
         <div class="asec">
           <div class="asec-hdr"><span>📊 الدرجات الحية</span></div>
           <div class="ascore-wrap" id="admin-scores"><div class="empty-note">في انتظار إرسال الحكام…</div></div>
         </div>
-
-        <!-- Final Submit -->
         <div class="asec">
           <div class="asec-hdr"><span>🏁 إرسال النتيجة النهائية</span></div>
           <div class="final-sub-bar">
-            <p>بعد الإرسال، لن يتمكن الحكام من التعديل وتُغلق الجلسة تلقائياً.</p>
+            <p>بعد الإرسال لن يتمكن الحكام من التعديل وتُغلق الجلسة تلقائياً.</p>
             <button class="btn btn-black" id="btn-final" onclick="submitFinal()">🏁 إرسال النتيجة</button>
           </div>
         </div>
-
-        <!-- Final Result -->
         <div class="asec" id="final-section" style="display:none">
           <div class="asec-hdr"><span>🏆 النتيجة النهائية</span></div>
           <div style="padding:14px" id="final-result-body"></div>
@@ -1001,7 +390,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
 </div>
 
 <!-- ══ JUDGE SCREEN ══ -->
-<div id="screen-judge">
+<div id="screen-judge" class="screen" style="display:none">
   <div class="topbar">
     <h1>🧑‍⚖️ لوحة الحكم</h1>
     <div class="topbar-right">
@@ -1010,18 +399,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
       <button class="btn tbtn" onclick="goBack()">خروج</button>
     </div>
   </div>
-
   <div class="jbody">
     <div class="j-topic-bar">
       <span class="j-topic-lbl">الموضوع:</span>
       <span id="j-topic" style="font-weight:700">—</span>
     </div>
     <div style="margin-bottom:12px" id="j-status"></div>
-
     <div class="teams-grid" id="j-scoring">
       <div style="grid-column:1/-1;text-align:center;padding:40px;color:#bbb">جاري التحميل…</div>
     </div>
-
     <div class="j-submit-bar">
       <p>راجع جميع الدرجات جيداً قبل الإرسال. لن تتمكن من التعديل بعد إرسال درجاتك النهائية.</p>
       <button class="btn btn-black" id="btn-jsub" onclick="judgeSubmit()">✅ إرسال درجاتي</button>
@@ -1029,5 +415,604 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
   </div>
 </div>
 
+<!-- ══ FIREBASE JS ══ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, update, onValue, push, remove }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ════════════ YOUR FIREBASE CONFIG ════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyBoRGnNoaJgDJ8xlOXeOcCiQZH_6S3KjV8",
+  authDomain: "debate-judging.firebaseapp.com",
+  databaseURL: "https://debate-judging-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "debate-judging",
+  storageBucket: "debate-judging.firebasestorage.app",
+  messagingSenderId: "284325186087",
+  appId: "1:284325186087:web:0683326e9d8a460505dc02"
+};
+// ═════════════════════════════════════════════
+
+const CRITERIA = ['المحتوى والحجج','اللغة العربية','الرد والتفاعل','الأداء والسلوك','المرجعية الإسلامية/العلمية'];
+const NJ = 4, NM = 3;
+
+let db, sessionRef, sessionCode;
+let myRole = null, myJudgeNum = null, myRequestId = null;
+let listeners = [];
+let adminData = {};
+let jScores = mkScores(), jNotes = mkNotes();
+let jSubmitted = false;
+
+function mkScores(){ return Array.from({length:2},()=>Array.from({length:NM},()=>Array(5).fill(0))); }
+function mkNotes(){ return Array.from({length:2},()=>Array(NM).fill('')); }
+
+// ── Helpers ──
+function $id(id){ return document.getElementById(id); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function arabicNum(n){ return ['','الأول','الثاني','الثالث','الرابع'][n]||n; }
+function genCode(){ return Math.random().toString(36).substring(2,8).toUpperCase(); }
+
+function showScreen(id){
+  // FIX: explicitly set display flex/block — never empty string
+  const flexScreens = ['screen-firebase','screen-landing','screen-waiting','screen-refused'];
+  document.querySelectorAll('.screen').forEach(el => {
+    if(el.id === id){
+      el.style.display = flexScreens.includes(id) ? 'flex' : 'block';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+}
+
+function toast(msg, type='info'){
+  const t = $id('toast');
+  t.textContent = msg; t.className = 'toast show '+type;
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+function clearLocal(){
+  ['dj_session','dj_role','dj_pwd','dj_reqid','dj_name','dj_judgenum']
+    .forEach(k=>localStorage.removeItem(k));
+}
+
+// ── INIT ──
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getDatabase(app);
+  // Only show landing / try restore after DOM ready
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initApp);
+  } else {
+    initApp();
+  }
+} catch(e){
+  console.error('Firebase init error:', e);
+  document.addEventListener('DOMContentLoaded', ()=> showScreen('screen-firebase'));
+}
+
+async function initApp(){
+  // Try to restore a previous session first
+  const code = localStorage.getItem('dj_session');
+  const role = localStorage.getItem('dj_role');
+
+  if(code && role){
+    try{
+      sessionCode = code;
+      sessionRef = ref(db,'sessions/'+code);
+      const snap = await get(sessionRef);
+      if(snap.exists()){
+        const data = snap.val();
+        if(role==='admin'){
+          const pwd = localStorage.getItem('dj_pwd');
+          if(data.adminPwd===pwd){ myRole='admin'; startAdmin(); return; }
+        } else if(role==='judge'){
+          myJudgeNum = +localStorage.getItem('dj_judgenum');
+          myRequestId = localStorage.getItem('dj_reqid');
+          const sv = localStorage.getItem(`dj_sc_${code}_${myJudgeNum}`);
+          if(sv) try{ jScores=JSON.parse(sv); }catch(e){}
+          const sn = localStorage.getItem(`dj_sn_${code}_${myJudgeNum}`);
+          if(sn) try{ jNotes=JSON.parse(sn); }catch(e){}
+          myRole='judge'; startJudge(); return;
+        } else if(role==='judge_pending'){
+          myRequestId = localStorage.getItem('dj_reqid');
+          showScreen('screen-waiting');
+          listenApproval(); return;
+        }
+      }
+    } catch(e){ console.warn('Restore failed:',e); }
+    clearLocal();
+  }
+  showScreen('screen-landing');
+}
+
+// ── LANDING ──
+window.goCreate = async function(){
+  const pwd = $id('admin-pwd').value.trim();
+  if(!pwd){ toast('أدخل كلمة مرور للمسؤول','error'); return; }
+  const btn = $id('btn-create'); btn.disabled=true;
+  try{
+    sessionCode = genCode();
+    sessionRef = ref(db,'sessions/'+sessionCode);
+    // Check collision
+    const snap = await get(sessionRef);
+    if(snap.exists()){ sessionCode=genCode(); sessionRef=ref(db,'sessions/'+sessionCode); }
+    // FIX: Don't store null values — Firebase strips them. Use 0/"" instead.
+    await set(sessionRef,{
+      adminPwd: pwd,
+      status: 'waiting',
+      topic: 'التبرع بالأعضاء',
+      customTopic: '',
+      round: '1',
+      teamNames: ['الفريق الأول (مؤيد)','الفريق الثاني (معارض)'],
+      memberNames: [
+        ['المتناظر الأول','المتناظر الثاني','المتناظر الثالث'],
+        ['المتناظر الأول','المتناظر الثاني','المتناظر الثالث']
+      ],
+      judgeSlotCount: 0,
+      finalSubmitted: false
+    });
+    localStorage.setItem('dj_session',sessionCode);
+    localStorage.setItem('dj_role','admin');
+    localStorage.setItem('dj_pwd',pwd);
+    myRole='admin';
+    startAdmin();
+  } catch(e){
+    console.error(e);
+    toast('خطأ في الإنشاء: '+e.message,'error');
+    btn.disabled=false;
+  }
+};
+
+window.goRejoin = async function(){
+  const code = $id('rejoin-code').value.trim().toUpperCase();
+  const pwd = $id('rejoin-pwd').value.trim();
+  if(!code||!pwd){ toast('أدخل الرمز وكلمة المرور','error'); return; }
+  const btn=$id('btn-rejoin'); btn.disabled=true;
+  try{
+    sessionRef=ref(db,'sessions/'+code);
+    const snap=await get(sessionRef);
+    if(!snap.exists()){ toast('الجلسة غير موجودة','error'); btn.disabled=false; return; }
+    if(snap.val().adminPwd!==pwd){ toast('كلمة مرور خاطئة','error'); btn.disabled=false; return; }
+    sessionCode=code;
+    localStorage.setItem('dj_session',sessionCode);
+    localStorage.setItem('dj_role','admin');
+    localStorage.setItem('dj_pwd',pwd);
+    myRole='admin'; startAdmin();
+  } catch(e){ toast('خطأ: '+e.message,'error'); btn.disabled=false; }
+};
+
+window.goJoin = async function(){
+  const code = $id('join-code').value.trim().toUpperCase();
+  const name = $id('judge-name-inp').value.trim();
+  if(!code){ toast('أدخل رمز الجلسة','error'); return; }
+  if(!name){ toast('أدخل اسمك','error'); return; }
+  const btn=$id('btn-join'); btn.disabled=true;
+  try{
+    const sRef=ref(db,'sessions/'+code);
+    const snap=await get(sRef);
+    if(!snap.exists()){ toast('الجلسة غير موجودة','error'); btn.disabled=false; return; }
+    if(snap.val().status==='closed'){ toast('الجلسة مغلقة','error'); btn.disabled=false; return; }
+    const newReq=await push(ref(db,'sessions/'+code+'/requests'),{
+      name, status:'pending', judgeNum:0, at:Date.now()
+    });
+    myRequestId=newReq.key;
+    sessionCode=code;
+    sessionRef=ref(db,'sessions/'+code);
+    localStorage.setItem('dj_session',code);
+    localStorage.setItem('dj_role','judge_pending');
+    localStorage.setItem('dj_reqid',myRequestId);
+    localStorage.setItem('dj_name',name);
+    showScreen('screen-waiting');
+    listenApproval();
+  } catch(e){ toast('خطأ: '+e.message,'error'); btn.disabled=false; }
+};
+
+function listenApproval(){
+  const r=ref(db,'sessions/'+sessionCode+'/requests/'+myRequestId);
+  const unsub=onValue(r,snap=>{
+    if(!snap.exists())return;
+    const req=snap.val();
+    if(req.status==='approved'&&req.judgeNum>0){
+      myJudgeNum=req.judgeNum;
+      localStorage.setItem('dj_judgenum',myJudgeNum);
+      localStorage.setItem('dj_role','judge');
+      myRole='judge';
+      toast('✅ تمت الموافقة! أنت الحكم '+arabicNum(myJudgeNum),'success');
+      startJudge();
+    } else if(req.status==='refused'){
+      showScreen('screen-refused');
+    }
+  });
+  listeners.push(unsub);
+}
+
+// ── ADMIN ──
+function startAdmin(){
+  showScreen('screen-admin');
+  $id('admin-code-display').textContent = sessionCode;
+  listeners.forEach(u=>u()); listeners=[];
+  const unsub=onValue(sessionRef,snap=>{
+    if(!snap.exists())return;
+    adminData=snap.val();
+    renderAdmin(adminData);
+  });
+  listeners.push(unsub);
+}
+
+function renderAdmin(data){
+  const badges={waiting:'⏳ في الانتظار',active:'🟢 نشطة',closed:'🔴 مغلقة'};
+  $id('admin-status-badge').textContent=badges[data.status]||data.status;
+  renderRequests(data.requests||{}, data.judgeSlots||{});
+  renderSlots(data.judgeSlots||{}, data.judgeNames||{});
+  renderAdminScores(data);
+  const fb=$id('btn-final');
+  fb.disabled=!!data.finalSubmitted;
+  fb.textContent=data.finalSubmitted?'✅ تم الإرسال':'🏁 إرسال النتيجة النهائية';
+  // Update name inputs (don't override while typing)
+  for(let t=0;t<2;t++){
+    const ti=$id('atn-'+t);
+    if(ti&&document.activeElement!==ti) ti.value=(data.teamNames||[])[t]||'';
+    for(let m=0;m<NM;m++){
+      const mi=$id(`amn-${t}-${m}`);
+      if(mi&&document.activeElement!==mi) mi.value=((data.memberNames||[])[t]||[])[m]||'';
+    }
+  }
+  // Sync dropdowns
+  const ts=$id('topic-sel');
+  if(ts&&document.activeElement!==ts&&data.topic) ts.value=data.topic;
+  const rs=$id('round-sel');
+  if(rs&&document.activeElement!==rs&&data.round) rs.value=data.round;
+  if(data.topic==='custom') $id('custom-row').style.display='';
+  if(data.finalSubmitted){
+    $id('final-section').style.display='block';
+    renderFinalResult(data);
+  }
+}
+
+function renderRequests(requests, slots){
+  const rows=Object.entries(requests);
+  if(!rows.length){ $id('requests-list').innerHTML='<div class="empty-note">لا توجد طلبات بعد. شارك الرمز مع الحكام.</div>'; return; }
+  rows.sort((a,b)=>(a[1].at||0)-(b[1].at||0));
+  let html='';
+  rows.forEach(([id,req])=>{
+    const cls={pending:'req-pending',approved:'req-approved',refused:'req-refused'}[req.status]||'';
+    const badge={
+      pending:`<span class="badge badge-y">⏳ معلق</span>`,
+      approved:`<span class="badge badge-g">✅ حكم ${arabicNum(req.judgeNum)}</span>`,
+      refused:`<span class="badge badge-r">✕ مرفوض</span>`
+    }[req.status]||'';
+    let actions='';
+    if(req.status==='pending'){
+      const takenSlots=Object.entries(slots).filter(([n,v])=>v&&v!==id).map(([n])=>+n);
+      const opts=[1,2,3,4].map(n=>`<option value="${n}" ${takenSlots.includes(n)?'disabled':''}>حكم ${arabicNum(n)}</option>`).join('');
+      actions=`<select id="sl-${id}" class="slot-sel"><option value="">تعيين…</option>${opts}</select>
+        <button class="btn btn-green btn-xs" onclick="approveReq('${id}')">✓ قبول</button>
+        <button class="btn btn-red btn-xs" onclick="refuseReq('${id}')">✕ رفض</button>`;
+    } else if(req.status==='approved'){
+      actions=`<button class="btn btn-xs btn-red" onclick="removeReq('${id}',${req.judgeNum})">إزالة</button>`;
+    } else {
+      actions=`<button class="btn btn-xs" onclick="delReq('${id}')">حذف</button>`;
+    }
+    html+=`<div class="req-row ${cls}">
+      <span class="req-name">${esc(req.name)}</span>
+      <div class="req-acts">${badge}${actions}</div>
+    </div>`;
+  });
+  $id('requests-list').innerHTML=html;
+}
+
+function renderSlots(slots, judgeNames){
+  let html='';
+  for(let n=1;n<=4;n++){
+    const filled=!!(slots[n]);
+    html+=`<div class="slot ${filled?'slot-filled':'slot-empty'}">
+      <span class="slot-n">${n}</span>
+      <span class="slot-lbl">${filled?esc(judgeNames[n]||'حكم '+arabicNum(n)):'شاغر'}</span>
+      <span class="slot-dot ${filled?'dot-green':'dot-gray'}"></span>
+    </div>`;
+  }
+  $id('judge-slots').innerHTML=html;
+}
+
+function renderAdminScores(data){
+  const scores=data.scores||{};
+  const tNames=data.teamNames||['الفريق الأول','الفريق الثاني'];
+  const mNames=data.memberNames||[['','',''],['','','']];
+  const judgeNames=data.judgeNames||{};
+  const submitted=data.submitted||{};
+  let html='<div class="jsub-row">';
+  for(let j=1;j<=4;j++){
+    const done=submitted[j]===true;
+    html+=`<div class="jsub-pill ${done?'jsub-done':''}">${esc(judgeNames[j]||'حكم '+arabicNum(j))} ${done?'✅':'⏳'}</div>`;
+  }
+  html+='</div>';
+  for(let t=0;t<2;t++){
+    const tt=calcTeamTotal(scores,t);
+    html+=`<div class="ascore-team ${t===0?'ascore-a':'ascore-b'}">
+      <div class="ascore-team-hdr">${esc(tNames[t])} — ${tt}/300</div>`;
+    for(let m=0;m<NM;m++){
+      const mt=calcMemberTotal(scores,t,m);
+      html+=`<div class="ascore-row">
+        <span class="ascore-name">${esc((mNames[t]||[])[m]||'م'+(m+1))}</span>
+        <div class="ascore-bar-wrap"><div class="ascore-bar ${t===0?'bar-a':'bar-b'}" style="width:${Math.round(mt)}%"></div></div>
+        <span class="ascore-val">${mt}/100</span>
+      </div>`;
+    }
+    html+='</div>';
+  }
+  const a=calcTeamTotal(scores,0),b=calcTeamTotal(scores,1);
+  if(a>0||b>0){
+    const wt=a>b?`🏆 ${esc(tNames[0])} يتقدم — ${a}/300`:b>a?`🏆 ${esc(tNames[1])} يتقدم — ${b}/300`:`🤝 تعادل حالياً — ${a}/300`;
+    html+=`<div class="ascore-winner">${wt}</div>`;
+  }
+  $id('admin-scores').innerHTML=html;
+}
+
+function calcMemberTotal(scores,t,m){
+  let s=0;
+  for(let j=1;j<=4;j++){
+    const sc=((scores[j]||[])[t]||[])[m];
+    if(Array.isArray(sc)) s+=sc.reduce((a,b)=>a+b,0);
+  }
+  return s;
+}
+function calcTeamTotal(scores,t){
+  let s=0; for(let m=0;m<NM;m++) s+=calcMemberTotal(scores,t,m); return s;
+}
+
+// ── Admin actions ──
+window.approveReq = async function(id){
+  const sel=$id('sl-'+id); const num=sel?+sel.value:0;
+  if(!num){ toast('اختر رقم الحكم','error'); return; }
+  const slots=adminData.judgeSlots||{};
+  if(slots[num]&&slots[num]!==id){ toast('هذا المقعد محجوز','error'); return; }
+  const snap=await get(ref(db,`sessions/${sessionCode}/requests/${id}`));
+  if(!snap.exists())return;
+  const req=snap.val();
+  await update(ref(db,`sessions/${sessionCode}/requests/${id}`),{status:'approved',judgeNum:num});
+  const upd={[`judgeSlots/${num}`]:id,[`judgeNames/${num}`]:req.name};
+  await update(ref(db,`sessions/${sessionCode}`),upd);
+  toast(`✅ ${req.name} → حكم ${arabicNum(num)}`,'success');
+};
+window.refuseReq = async function(id){
+  await update(ref(db,`sessions/${sessionCode}/requests/${id}`),{status:'refused'});
+  toast('تم رفض الطلب');
+};
+window.removeReq = async function(id,num){
+  await update(ref(db,`sessions/${sessionCode}/requests/${id}`),{status:'pending',judgeNum:0});
+  await update(ref(db,`sessions/${sessionCode}`),{[`judgeSlots/${num}`]:null,[`judgeNames/${num}`]:''});
+  toast('تمت إزالة الحكم');
+};
+window.delReq = async function(id){
+  await remove(ref(db,`sessions/${sessionCode}/requests/${id}`));
+};
+window.setStatus = async function(s){
+  await update(sessionRef,{status:s});
+  const m={waiting:'⏳ في الانتظار',active:'🟢 الجلسة نشطة',closed:'🔴 الجلسة مغلقة'};
+  toast(m[s]||s);
+};
+window.setTopic = async function(v){
+  await update(sessionRef,{topic:v});
+  $id('custom-row').style.display=v==='custom'?'':'none';
+};
+window.setCustomTopic = async function(v){ await update(sessionRef,{customTopic:v}); };
+window.setRound = async function(v){ await update(sessionRef,{round:v}); };
+window.setTeamName = async function(t,v){
+  const tn=[...(adminData.teamNames||['',''])]; tn[t]=v;
+  await update(sessionRef,{teamNames:tn});
+};
+window.setMemberName = async function(t,m,v){
+  const mn=JSON.parse(JSON.stringify(adminData.memberNames||[[],[]]));
+  if(!mn[t])mn[t]=[]; mn[t][m]=v;
+  await update(sessionRef,{memberNames:mn});
+};
+window.submitFinal = async function(){
+  if(!confirm('هل تريد إرسال النتيجة النهائية؟ لن يتمكن الحكام من التعديل.'))return;
+  await update(sessionRef,{finalSubmitted:true,status:'closed'});
+  toast('✅ النتيجة النهائية مُرسلة','success');
+};
+window.copyCode = function(){
+  navigator.clipboard.writeText(sessionCode).then(()=>toast('تم نسخ الرمز ✓','success'));
+};
+window.adminExport = function(){ doExport(adminData); };
+window.adminPrint = function(){ doPrint(adminData); };
+
+// ── JUDGE ──
+let judgeData={};
+
+function startJudge(){
+  showScreen('screen-judge');
+  $id('j-num').textContent='الحكم '+arabicNum(myJudgeNum);
+  $id('j-code').textContent=sessionCode;
+  listeners.forEach(u=>u()); listeners=[];
+  const unsub=onValue(sessionRef,snap=>{
+    if(!snap.exists())return;
+    judgeData=snap.val();
+    jSubmitted=(judgeData.submitted||{})[myJudgeNum]===true;
+    renderJudge(judgeData);
+  });
+  listeners.push(unsub);
+}
+
+function renderJudge(data){
+  $id('j-topic').textContent=data.topic==='custom'?(data.customTopic||'—'):(data.topic||'—');
+  const sc={waiting:'status-waiting',active:'status-active',closed:'status-closed'};
+  const st={waiting:'⏳ في انتظار بدء الجلسة',active:'🟢 الجلسة نشطة — يمكنك التسجيل',closed:'🔴 الجلسة مغلقة'};
+  $id('j-status').innerHTML=`<span class="status-chip ${sc[data.status]||''}">${st[data.status]||data.status}</span>`;
+  const btn=$id('btn-jsub');
+  const locked=jSubmitted||!!data.finalSubmitted;
+  btn.disabled=locked;
+  btn.textContent=locked?'✅ تم الإرسال':'✅ إرسال درجاتي النهائية';
+  const tNames=data.teamNames||['الفريق الأول','الفريق الثاني'];
+  const mNames=data.memberNames||[['','',''],['','','']];
+  let html='';
+  for(let t=0;t<2;t++){
+    html+=`<div class="team-card">
+      <div class="team-hdr ${t===0?'thdr-a':'thdr-b'}">
+        <span class="t-name">${esc(tNames[t])}</span>
+      </div>`;
+    for(let m=0;m<NM;m++){
+      const ms=jScores[t][m].reduce((a,b)=>a+b,0);
+      const dis=locked?'disabled':'';
+      html+=`<div class="member-blk">
+        <div class="mem-name-row">
+          <span class="mem-idx">م${m+1}</span>
+          <span class="mem-txt">${esc((mNames[t]||[])[m]||'المتناظر '+(m+1))}</span>
+          <span class="mem-score ${t===0?'chip-a':'chip-b'}" id="ls-${t}-${m}">${ms}/25</span>
+        </div>
+        <table class="crit-tbl">`;
+      for(let c=0;c<5;c++){
+        const cur=jScores[t][m][c];
+        html+=`<tr><td class="crit-name-cell">${CRITERIA[c]}</td><td><div class="score-btns">`;
+        for(let v=0;v<=5;v++){
+          const sel=cur===v?(t===0?' sel-a':' sel-b'):'';
+          html+=`<button class="sbtn${sel}" data-t="${t}" data-m="${m}" data-c="${c}" data-v="${v}" ${dis}>${v}</button>`;
+        }
+        html+=`</div></td></tr>`;
+      }
+      html+=`</table>
+        <textarea class="notes-ta" rows="1" data-t="${t}" data-m="${m}" placeholder="ملاحظات…" ${dis}>${esc(jNotes[t][m])}</textarea>
+      </div>`;
+    }
+    let tsub=0; for(let m=0;m<NM;m++) tsub+=jScores[t][m].reduce((a,b)=>a+b,0);
+    html+=`<div class="team-sub ${t===0?'tsub-a':'tsub-b'}" id="tsub-${t}">مجموع الفريق: <strong>${tsub}/75</strong></div>
+    </div>`;
+  }
+  const area=$id('j-scoring');
+  area.innerHTML=html;
+  area.querySelectorAll('.sbtn').forEach(b=>{
+    b.addEventListener('click',function(){
+      if(locked)return;
+      const t=+this.dataset.t,m=+this.dataset.m,c=+this.dataset.c,v=+this.dataset.v;
+      jScores[t][m][c]=v;
+      area.querySelectorAll(`.sbtn[data-t="${t}"][data-m="${m}"][data-c="${c}"]`).forEach(x=>{
+        x.classList.remove('sel-a','sel-b');
+        if(+x.dataset.v===v) x.classList.add(t===0?'sel-a':'sel-b');
+      });
+      const ms=jScores[t][m].reduce((a,b)=>a+b,0);
+      const lsel=$id(`ls-${t}-${m}`); if(lsel) lsel.textContent=ms+'/25';
+      let tsub=0; for(let mm=0;mm<NM;mm++) tsub+=jScores[t][mm].reduce((a,b)=>a+b,0);
+      const tse=$id(`tsub-${t}`); if(tse) tse.innerHTML=`مجموع الفريق: <strong>${tsub}/75</strong>`;
+      localStorage.setItem(`dj_sc_${sessionCode}_${myJudgeNum}`,JSON.stringify(jScores));
+    });
+  });
+  area.querySelectorAll('.notes-ta').forEach(ta=>{
+    ta.addEventListener('input',function(){
+      jNotes[+this.dataset.t][+this.dataset.m]=this.value;
+      localStorage.setItem(`dj_sn_${sessionCode}_${myJudgeNum}`,JSON.stringify(jNotes));
+    });
+  });
+}
+
+window.judgeSubmit = async function(){
+  if(!confirm('هل تريد إرسال درجاتك النهائية؟ لن تتمكن من التعديل.'))return;
+  if(judgeData.status!=='active'){ toast('الجلسة غير نشطة بعد','error'); return; }
+  const btn=$id('btn-jsub'); btn.disabled=true;
+  try{
+    await update(sessionRef,{
+      [`scores/${myJudgeNum}`]:jScores,
+      [`notes/${myJudgeNum}`]:jNotes,
+      [`submitted/${myJudgeNum}`]:true
+    });
+    jSubmitted=true;
+    btn.textContent='✅ تم الإرسال';
+    toast('✅ تم إرسال درجاتك بنجاح','success');
+  } catch(e){
+    toast('خطأ في الإرسال: '+e.message,'error');
+    btn.disabled=false;
+  }
+};
+
+// ── Final Result ──
+function renderFinalResult(data){
+  const scores=data.scores||{};
+  const tNames=data.teamNames||['الفريق الأول','الفريق الثاني'];
+  const mNames=data.memberNames||[['','',''],['','','']];
+  const a=calcTeamTotal(scores,0),b=calcTeamTotal(scores,1);
+  let html='';
+  if(a>b) html+=`<div class="fr-winner fr-a">🏆 الفائز: ${esc(tNames[0])} — ${a}/300</div>`;
+  else if(b>a) html+=`<div class="fr-winner fr-b">🏆 الفائز: ${esc(tNames[1])} — ${b}/300</div>`;
+  else html+=`<div class="fr-winner fr-draw">🤝 تعادل — ${a}/300</div>`;
+  for(let t=0;t<2;t++){
+    html+=`<div class="fr-team ${t===0?'fr-team-a':'fr-team-b'}">
+      <div class="fr-team-ttl">${esc(tNames[t])} — ${calcTeamTotal(scores,t)}/300</div>`;
+    for(let m=0;m<NM;m++){
+      html+=`<div class="fr-mem-row"><span>${esc((mNames[t]||[])[m]||'م'+(m+1))}</span>
+        <span class="fr-mem-score">${calcMemberTotal(scores,t,m)}/100</span></div>`;
+    }
+    html+='</div>';
+  }
+  $id('final-result-body').innerHTML=html;
+}
+
+// ── Export / Print ──
+function doExport(data){
+  const scores=data.scores||{},tNames=data.teamNames||['',''],mNames=data.memberNames||[[],[]];
+  const jNames=data.judgeNames||{};
+  const topic=data.topic==='custom'?(data.customTopic||'—'):(data.topic||'—');
+  const rmap={'1':'الجولة الأولى','2':'الجولة الثانية','3':'الجولة الثالثة','final':'النهائية'};
+  let L=['═══════════════════════════════════','   منصة تحكيم المناظرات العربية','═══════════════════════════════════',
+    'الموضوع: '+topic,'الجولة: '+(rmap[data.round]||data.round),''];
+  for(let j=1;j<=4;j++){
+    L.push('───────────────────────────────────');
+    L.push('الحكم: '+(jNames[j]||'حكم '+arabicNum(j)));
+    for(let t=0;t<2;t++){
+      L.push('  الفريق: '+tNames[t]);
+      for(let m=0;m<NM;m++){
+        const sc=((scores[j]||[])[t]||[])[m]||[];
+        L.push('    '+((mNames[t]||[])[m]||'م'+(m+1))+': '+sc.reduce((a,b)=>a+b,0)+'/25');
+        CRITERIA.forEach((c,i)=>L.push('      '+c+': '+(sc[i]||0)+'/5'));
+      }
+    }
+    L.push('');
+  }
+  L.push('═══════════════════════════════════','النتائج الإجمالية','═══════════════════════════════════');
+  for(let t=0;t<2;t++){
+    L.push(tNames[t]+': '+calcTeamTotal(scores,t)+'/300');
+    for(let m=0;m<NM;m++) L.push('  '+((mNames[t]||[])[m]||'م'+(m+1))+': '+calcMemberTotal(scores,t,m)+'/100');
+  }
+  const a=calcTeamTotal(scores,0),b=calcTeamTotal(scores,1);
+  L.push('',a>b?'🏆 الفائز: '+tNames[0]:b>a?'🏆 الفائز: '+tNames[1]:'🤝 تعادل');
+  navigator.clipboard.writeText(L.join('\n')).then(()=>toast('تم النسخ ✓','success'));
+}
+
+function doPrint(data){
+  const scores=data.scores||{},tNames=data.teamNames||['',''],mNames=data.memberNames||[[],[]];
+  const jNames=data.judgeNames||{};
+  const topic=data.topic==='custom'?(data.customTopic||'—'):(data.topic||'—');
+  const win=window.open('','_blank');
+  let H=`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>نتائج المناظرة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>body{font-family:'Cairo',sans-serif;direction:rtl;padding:20px;font-size:12px}
+    h1{text-align:center;font-size:18px;margin-bottom:4px}.meta{text-align:center;color:#666;font-size:12px;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse;margin:8px 0}th,td{border:1px solid #ccc;padding:4px 7px;text-align:right}
+    th{background:#f0f0f0;font-weight:700}.jh{background:#111;color:#fff;font-size:13px;font-weight:900;padding:6px 10px;margin:14px 0 4px}
+    .ta{color:#0C447C;font-weight:700}.tb{color:#3C3489;font-weight:700}
+    .winner{text-align:center;font-size:15px;font-weight:900;padding:10px;border:2px solid #111;margin:14px 0}</style>
+    </head><body><h1>⚖️ نتائج المناظرة</h1><div class="meta">${esc(topic)}</div>`;
+  for(let j=1;j<=4;j++){
+    H+=`<div class="jh">${esc(jNames[j]||'حكم '+arabicNum(j))}</div>
+    <table><thead><tr><th>الفريق</th><th>المتناظر</th>`;
+    CRITERIA.forEach(c=>H+=`<th>${esc(c)}</th>`);
+    H+=`<th>/25</th></tr></thead><tbody>`;
+    for(let t=0;t<2;t++){
+      for(let m=0;m<NM;m++){
+        const sc=((scores[j]||[])[t]||[])[m]||[];
+        H+=`<tr><td class="${t===0?'ta':'tb'}">${esc(tNames[t])}</td><td>${esc((mNames[t]||[])[m]||'م'+(m+1))}</td>`;
+        CRITERIA.forEach((_,i)=>H+=`<td style="text-align:center">${sc[i]||0}</td>`);
+        H+=`<td style="text-align:center;font-weight:900">${sc.reduce((a,b)=>a+b,0)}</td></tr>`;
+      }
+    }
+    H+='</tbody></table>';
+  }
+  const a=calcTeamTotal(scores,0),b=calcTeamTotal(scores,1);
+  const wt=a>b?`🏆 ${tNames[0]} — ${a}/300`:b>a?`🏆 ${tNames[1]} — ${b}/300`:`🤝 تعادل — ${a}/300`;
+  H+=`<div class="winner">${esc(wt)}</div><script>window.onload=()=>window.print()<\/script></body></html>`;
+  win.document.write(H); win.document.close();
+}
+
+window.goBack = function(){ clearLocal(); location.reload(); };
+
+</script>
 </body>
 </html>
