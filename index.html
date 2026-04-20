@@ -289,8 +289,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
       <button class="code-chip" id="admin-code-display" onclick="copyCode()" title="انقر للنسخ">——</button>
       <span id="admin-status-badge" class="status-bdg">—</span>
       <button class="btn tbtn" onclick="adminExport()">📋 تصدير</button>
-      <button class="btn tbtn" onclick="finalResultPrint()">📄 النتيجة النهائية</button>
-      <button class="btn tbtn" style="border-color:#F9A825;color:#F9A825" onclick="detailPrint()">🎨 التفصيل النهائي</button>
+      <button class="btn tbtn" style="border-color:#F9A825;color:#F9A825" onclick="finalResultPrint()">📄 النتيجة النهائية</button>
+      <button class="btn tbtn" onclick="detailPrint()">🎨 التفصيل النهائي</button>
       <button class="btn tbtn" onclick="goBack()">خروج</button>
     </div>
   </div>
@@ -385,8 +385,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#555}
           <div class="asec-hdr"><span>🏆 النتيجة النهائية</span></div>
           <div style="padding:14px" id="final-result-body"></div>
           <div class="fr-actions">
-            <button class="btn btn-black" onclick="finalResultPrint()">📄 النتيجة النهائية</button>
-            <button class="btn" style="background:#F9A825;border-color:#F9A825;color:#111" onclick="detailPrint()">🎨 التفصيل النهائي</button>
+            <button class="btn" style="background:#F9A825;border-color:#F9A825;color:#111;font-weight:800" onclick="finalResultPrint()">📄 النتيجة النهائية</button>
+            <button class="btn btn-black" onclick="detailPrint()">🎨 التفصيل النهائي</button>
             <button class="btn" onclick="adminExport()">📋 نسخ</button>
           </div>
         </div>
@@ -982,122 +982,194 @@ function doExport(data){
 // ── النتيجة النهائية: team+member point-by-point, share-ready card ──
 function doFinalResultPrint(data){
   const scores=data.scores||{},tN=data.teamNames||['',''],mN=data.memberNames||[[],[]];
+  const jNames=data.judgeNames||{};
   const topic=data.topic==='custom'?(data.customTopic||'—'):(data.topic||'—');
-  const flatN=data.round||'—';
+  const flatN=data.flat||data.round||'—';
   const aT=calcTeamTotal(scores,0),bT=calcTeamTotal(scores,1);
+  const draw=aT===bT;
+  const wTeam=aT>bT?tN[0]:bT>aT?tN[1]:'—';
+  const wScore=Math.max(aT,bT);
 
-  function critTeamTotal(t,c){
+  // Per-criterion team total (all members × all judges)
+  function critTeamTotal(t,ci){
     let s=0;
     for(let m=0;m<NM;m++) for(let j=1;j<=NJ;j++){
-      const sc=((scores[j]||[])[t]||[])[m]; if(Array.isArray(sc)) s+=sc[c]||0;
+      const sc=((scores[j]||[])[t]||[])[m]; if(Array.isArray(sc)) s+=sc[ci]||0;
     }
     return s;
   }
 
+  // Collect judge names
+  const judgeList=[];
+  for(let j=1;j<=NJ;j++) if(jNames[j]) judgeList.push({n:j,name:jNames[j]});
+
   const win=window.open('','_blank');
-  const wColor=aT>bT?['#1565C0','#E6F1FB']:bT>aT?['#4527A0','#EEEDFE']:['#333','#f5f5f5'];
-  const wTeam=aT>bT?esc(tN[0]):bT>aT?esc(tN[1]):'تعادل';
-  const wScore=aT>bT?aT:bT>aT?bT:aT;
-  const draw=aT===bT;
+
+  // Color palette — clean, printable, not dark
+  const A_MAIN='#1565C0', A_LIGHT='#E8F2FC', A_MED='#BBDEFB';
+  const B_MAIN='#4527A0', B_LIGHT='#EDE7F6', B_MED='#D1C4E9';
+  const WIN_BG = aT>bT ? A_LIGHT : bT>aT ? B_LIGHT : '#F5F5F5';
+  const WIN_BORDER = aT>bT ? A_MAIN : bT>aT ? B_MAIN : '#9E9E9E';
+  const WIN_TEXT = aT>bT ? A_MAIN : bT>aT ? B_MAIN : '#424242';
 
   let H=`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
 <title>النتيجة النهائية</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
+@page{size:A4 portrait;margin:14mm 12mm}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Cairo',sans-serif;direction:rtl;background:#0f172a;color:#fff;min-height:100vh;padding:24px}
-.card{background:#1e293b;border-radius:16px;padding:28px;max-width:860px;margin:0 auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.header{text-align:center;margin-bottom:24px}
-.header .logo{font-size:13px;letter-spacing:3px;color:#94a3b8;text-transform:uppercase;margin-bottom:8px}
-.header h1{font-size:26px;font-weight:900;color:#f1f5f9;margin-bottom:6px}
-.header .meta{font-size:13px;color:#64748b}
-.winner-box{border-radius:12px;padding:20px 24px;text-align:center;margin-bottom:24px;border:2px solid}
-.winner-box .crown{font-size:36px;margin-bottom:6px}
-.winner-box .w-label{font-size:13px;font-weight:700;letter-spacing:2px;opacity:.8;margin-bottom:4px}
-.winner-box .w-name{font-size:24px;font-weight:900;margin-bottom:6px}
-.winner-box .w-score{font-size:42px;font-weight:900;opacity:.95}
-.winner-box .w-max{font-size:14px;opacity:.6;margin-top:2px}
-.teams-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
-.team-block{border-radius:10px;overflow:hidden}
-.team-hdr{padding:10px 14px;font-size:14px;font-weight:900}
-.team-hdr-a{background:#1565C0;color:#fff}
-.team-hdr-b{background:#4527A0;color:#fff}
-.crit-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);background:#0f172a}
+body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;font-size:12px}
+/* ── HEADER ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;
+  border-bottom:3px solid #1565C0;padding-bottom:10px;margin-bottom:16px}
+.ph-logo{font-size:11px;font-weight:700;color:#64748b;letter-spacing:1px}
+.ph-title{font-size:18px;font-weight:900;color:#0f172a;text-align:center;flex:1;padding:0 10px}
+.ph-meta{font-size:11px;color:#64748b;text-align:left;white-space:nowrap}
+/* ── WINNER BANNER ── */
+.winner-banner{border-radius:10px;padding:14px 20px;text-align:center;margin-bottom:16px;
+  border:2px solid ${WIN_BORDER};background:${WIN_BG};color:${WIN_TEXT}}
+.wb-icon{font-size:28px;line-height:1;margin-bottom:4px}
+.wb-label{font-size:10px;font-weight:700;letter-spacing:2px;opacity:.75;margin-bottom:3px}
+.wb-name{font-size:20px;font-weight:900;margin-bottom:4px}
+.wb-scores{display:flex;align-items:baseline;justify-content:center;gap:6px}
+.wb-score-big{font-size:34px;font-weight:900}
+.wb-score-max{font-size:13px;opacity:.6}
+/* ── TEAMS GRID ── */
+.teams-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.team-card{border-radius:8px;overflow:hidden;border:1.5px solid}
+.tc-a{border-color:${A_MED}}.tc-b{border-color:${B_MED}}
+.tc-head{padding:8px 12px;font-size:13px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
+.tc-head-a{background:${A_MAIN};color:#fff}.tc-head-b{background:${B_MAIN};color:#fff}
+.tc-head-total{font-size:17px;font-weight:900;opacity:.95}
+.crit-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #f1f5f9;background:#fff}
 .crit-row:last-child{border-bottom:none}
-.crit-label{font-size:11px;color:#94a3b8;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.crit-bar-wrap{width:80px;height:8px;background:#1e293b;border-radius:4px;overflow:hidden;flex-shrink:0}
-.crit-bar-a{height:100%;background:#3b82f6;border-radius:4px;transition:width .4s}
-.crit-bar-b{height:100%;background:#8b5cf6;border-radius:4px;transition:width .4s}
-.crit-val{font-size:13px;font-weight:900;width:38px;text-align:center;flex-shrink:0}
-.crit-val-a{color:#93c5fd}.crit-val-b{color:#c4b5fd}
-.team-total-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;font-size:15px;font-weight:900}
-.team-total-a{background:#1565C0;color:#fff}.team-total-b{background:#4527A0;color:#fff}
-.vs-divider{text-align:center;font-size:22px;font-weight:900;color:#475569;display:flex;align-items:center;justify-content:center;margin-bottom:22px;gap:12px}
-.vs-divider::before,.vs-divider::after{content:'';flex:1;height:1px;background:#1e293b}
-.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
-.sum-card{border-radius:10px;padding:16px;text-align:center}
-.sum-card-a{background:rgba(21,101,192,.15);border:1px solid rgba(21,101,192,.4)}
-.sum-card-b{background:rgba(69,39,160,.15);border:1px solid rgba(69,39,160,.4)}
-.sum-name{font-size:13px;color:#94a3b8;margin-bottom:4px}
-.sum-score{font-size:36px;font-weight:900}
-.sum-score-a{color:#60a5fa}.sum-score-b{color:#a78bfa}
-.sum-max{font-size:12px;color:#475569}
-.footer{text-align:center;font-size:11px;color:#334155;margin-top:20px;letter-spacing:1px}
-@media print{body{background:#0f172a!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.crit-num{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:900;flex-shrink:0;color:#fff}
+.cn-a{background:${A_MAIN}}.cn-b{background:${B_MAIN}}
+.crit-label{font-size:10px;color:#374151;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crit-bar-wrap{width:60px;height:7px;background:#f1f5f9;border-radius:3px;overflow:hidden;flex-shrink:0}
+.crit-bar-a{height:100%;background:${A_MAIN};border-radius:3px}
+.crit-bar-b{height:100%;background:${B_MAIN};border-radius:3px}
+.crit-score{font-size:11px;font-weight:900;width:30px;text-align:center;flex-shrink:0}
+.cs-a{color:${A_MAIN}}.cs-b{color:${B_MAIN}}
+.crit-max{font-size:9px;color:#9ca3af;flex-shrink:0}
+/* ── VS DIVIDER ── */
+.vs-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.vs-bar::before,.vs-bar::after{content:'';flex:1;height:1px;background:#e2e8f0}
+.vs-text{font-size:11px;font-weight:900;color:#9ca3af;letter-spacing:2px}
+/* ── SCORE COMPARISON ── */
+.score-compare{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:0;margin-bottom:14px;
+  border:1.5px solid #e2e8f0;border-radius:8px;overflow:hidden}
+.sc-team{padding:12px 10px;text-align:center}
+.sc-team-a{background:${A_LIGHT}}.sc-team-b{background:${B_LIGHT}}
+.sc-name{font-size:11px;font-weight:700;margin-bottom:4px}
+.sc-name-a{color:${A_MAIN}}.sc-name-b{color:${B_MAIN}}
+.sc-score{font-size:30px;font-weight:900}
+.sc-score-a{color:${A_MAIN}}.sc-score-b{color:${B_MAIN}}
+.sc-max{font-size:10px;color:#9ca3af}
+.sc-middle{background:#f8fafc;padding:12px 8px;text-align:center;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0}
+.sc-middle-icon{font-size:18px;display:block}
+.sc-middle-diff{font-size:10px;color:#64748b;margin-top:3px}
+/* ── JUDGES STRIP ── */
+.judges-strip{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;
+  padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.js-label{font-size:10px;font-weight:700;color:#64748b;white-space:nowrap}
+.judge-pill{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid #e2e8f0;
+  border-radius:20px;padding:3px 9px;font-size:10px;font-weight:600;color:#374151}
+.jp-num{width:16px;height:16px;background:#1565C0;color:#fff;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;flex-shrink:0}
+/* ── FOOTER ── */
+.page-footer{border-top:1px solid #e2e8f0;padding-top:8px;display:flex;justify-content:space-between;
+  align-items:center;font-size:9px;color:#9ca3af;margin-top:4px}
+@media print{
+  body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page-header,.winner-banner,.teams-grid,.vs-bar,.score-compare,.judges-strip,.page-footer{page-break-inside:avoid}
+}
 </style></head><body>
-<div class="card">
-  <div class="header">
-    <div class="logo">⚖️ منصة تحكيم المناظرات العربية</div>
-    <h1>${esc(topic)}</h1>
-    <div class="meta">رقم الشقة: ${esc(flatN)} &nbsp;·&nbsp; التقييم من 4 حكام</div>
+
+<div class="page-header">
+  <div class="ph-logo">⚖️ منصة تحكيم المناظرات</div>
+  <div class="ph-title">${esc(topic)}</div>
+  <div class="ph-meta">رقم الشقة: ${esc(flatN)}</div>
+</div>
+
+<div class="winner-banner">
+  <div class="wb-icon">${draw?'🤝':'🏆'}</div>
+  <div class="wb-label">${draw?'نتيجة التحكيم النهائية':'الفريق الفائز'}</div>
+  <div class="wb-name">${draw?'تعادل بين الفريقين':esc(wTeam)}</div>
+  <div class="wb-scores">
+    <span class="wb-score-big">${wScore}</span>
+    <span class="wb-score-max">من 300 نقطة</span>
   </div>
-  <div class="winner-box" style="background:${wColor[1]}22;border-color:${wColor[0]};color:${wColor[0]}">
-    <div class="crown">${draw?'🤝':'🏆'}</div>
-    <div class="w-label">${draw?'نتيجة التحكيم':'الفريق الفائز'}</div>
-    <div class="w-name">${draw?'تعادل بين الفريقين':wTeam}</div>
-    <div class="w-score">${wScore}</div>
-    <div class="w-max">من أصل 300 نقطة</div>
-  </div>
-  <div class="teams-row">`;
+</div>
+
+<div class="teams-grid">`;
 
   for(let t=0;t<2;t++){
     const tT=calcTeamTotal(scores,t);
-    const clr=t===0?'a':'b';
-    H+=`<div class="team-block">
-      <div class="team-hdr team-hdr-${clr}">${esc(tN[t])}</div>`;
+    const cl=t===0?'a':'b';
+    const maxCrit=NM*NJ*5;
+    H+=`<div class="team-card tc-${cl}">
+      <div class="tc-head tc-head-${cl}">
+        <span>${esc(tN[t])}</span>
+        <span class="tc-head-total">${tT}/300</span>
+      </div>`;
     for(let ci=0;ci<5;ci++){
       const cv=critTeamTotal(t,ci);
-      const maxCrit=NM*NJ*5;
       const pct=Math.round(cv/maxCrit*100);
       H+=`<div class="crit-row">
+        <span class="crit-num cn-${cl}">${ci+1}</span>
         <span class="crit-label" title="${esc(CRITERIA[ci])}">${esc(CRITERIA[ci])}</span>
-        <div class="crit-bar-wrap"><div class="crit-bar-${clr}" style="width:${pct}%"></div></div>
-        <span class="crit-val crit-val-${clr}">${cv}</span>
+        <div class="crit-bar-wrap"><div class="crit-bar-${cl}" style="width:${pct}%"></div></div>
+        <span class="crit-score cs-${cl}">${cv}</span>
+        <span class="crit-max">/${maxCrit}</span>
       </div>`;
     }
-    H+=`<div class="team-total-row team-total-${clr}">
-      <span>المجموع</span><span>${tT} / 300</span>
-    </div></div>`;
+    H+=`</div>`;
   }
 
   H+=`</div>
-  <div class="vs-divider">VS</div>
-  <div class="summary-grid">
-    <div class="sum-card sum-card-a">
-      <div class="sum-name">${esc(tN[0])}</div>
-      <div class="sum-score sum-score-a">${aT}</div>
-      <div class="sum-max">/ 300</div>
-    </div>
-    <div class="sum-card sum-card-b">
-      <div class="sum-name">${esc(tN[1])}</div>
-      <div class="sum-score sum-score-b">${bT}</div>
-      <div class="sum-max">/ 300</div>
-    </div>
+
+<div class="vs-bar"><span class="vs-text">النتيجة الإجمالية</span></div>
+
+<div class="score-compare">
+  <div class="sc-team sc-team-a">
+    <div class="sc-name sc-name-a">${esc(tN[0])}</div>
+    <div class="sc-score sc-score-a">${aT}</div>
+    <div class="sc-max">/ 300</div>
   </div>
-  <div class="footer">النتائج الرسمية — ${esc(topic)} — رقم الشقة ${esc(flatN)}</div>
+  <div class="sc-middle">
+    <span class="sc-middle-icon">${aT>bT?'🏆':bT>aT?'🏅':'🤝'}</span>
+    <div class="sc-middle-diff">${Math.abs(aT-bT)} فارق</div>
+  </div>
+  <div class="sc-team sc-team-b">
+    <div class="sc-name sc-name-b">${esc(tN[1])}</div>
+    <div class="sc-score sc-score-b">${bT}</div>
+    <div class="sc-max">/ 300</div>
+  </div>
+</div>`;
+
+  // Judges strip — only shown if judge names exist
+  if(judgeList.length>0){
+    H+=`<div class="judges-strip">
+      <span class="js-label">هيئة التحكيم:</span>`;
+    judgeList.forEach(j=>{
+      H+=`<span class="judge-pill">
+        <span class="jp-num">${j.n}</span>
+        ${esc(j.name)}
+      </span>`;
+    });
+    H+=`</div>`;
+  }
+
+  H+=`<div class="page-footer">
+  <span>منصة تحكيم المناظرات العربية</span>
+  <span>${esc(topic)} — رقم الشقة ${esc(flatN)} — ${NJ} حكام</span>
+  <span>النتائج رسمية ومعتمدة</span>
 </div>
 <script>window.onload=()=>window.print()<\/script>
 </body></html>`;
+
   win.document.write(H); win.document.close();
 }
 
