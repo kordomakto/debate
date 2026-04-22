@@ -77,40 +77,40 @@ input::placeholder{color:var(--ink4)}
 #screen-role{min-height:100vh;padding:20px}
 .role-bg{
   position:fixed;inset:0;z-index:-1;
-  background:linear-gradient(135deg,#0D1117 0%,#1a237e 50%,#0D1117 100%);
+  background:linear-gradient(150deg,#EEF2FF 0%,#F0F9FF 40%,#ECFDF5 100%);
 }
 .role-bg::before{
   content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at 30% 50%,rgba(21,101,192,.25) 0%,transparent 60%),
-             radial-gradient(ellipse at 70% 20%,rgba(69,39,160,.2) 0%,transparent 55%);
+  background:radial-gradient(ellipse at 25% 60%,rgba(99,102,241,.12) 0%,transparent 55%),
+             radial-gradient(ellipse at 75% 25%,rgba(16,185,129,.1) 0%,transparent 50%);
 }
 .role-wrap{max-width:960px;margin:0 auto;padding:40px 20px}
-.role-header{text-align:center;margin-bottom:48px;color:#fff}
+.role-header{text-align:center;margin-bottom:48px;color:#0f172a}
 .role-header .badge-header{
   display:inline-flex;align-items:center;gap:8px;
-  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
-  border-radius:30px;padding:6px 18px;font-size:12px;color:rgba(255,255,255,.7);
+  background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);
+  border-radius:30px;padding:6px 18px;font-size:12px;color:#4338CA;
   margin-bottom:20px;letter-spacing:1px
 }
 .role-header h1{font-size:clamp(24px,5vw,38px);font-weight:900;line-height:1.2;
-  background:linear-gradient(135deg,#fff 0%,rgba(255,255,255,.7) 100%);
+  background:linear-gradient(135deg,#1565C0 0%,#4527A0 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
   margin-bottom:12px}
-.role-header p{font-size:15px;color:rgba(255,255,255,.5);max-width:500px;margin:0 auto;line-height:1.8}
+.role-header p{font-size:15px;color:#64748B;max-width:500px;margin:0 auto;line-height:1.8}
 .role-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
 @media(max-width:700px){.role-cards{grid-template-columns:1fr;max-width:360px;margin:0 auto 32px}}
 .role-card{
-  background:rgba(255,255,255,.06);
-  border:1.5px solid rgba(255,255,255,.1);
+  background:#FFFFFF;
+  border:1.5px solid #E2E8F0;
   border-radius:var(--r20);padding:28px 22px;
   cursor:pointer;transition:all .25s;position:relative;overflow:hidden;
-  text-align:center;
+  text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.06);
 }
 .role-card::before{
   content:'';position:absolute;inset:0;opacity:0;transition:opacity .25s;border-radius:inherit;
 }
-.role-card:hover{border-color:rgba(255,255,255,.3);transform:translateY(-4px);
-  box-shadow:0 16px 40px rgba(0,0,0,.3)}
+.role-card:hover{border-color:#CBD5E1;transform:translateY(-4px);
+  box-shadow:0 12px 32px rgba(0,0,0,.1)}
 .role-card.rc-admin::before{background:linear-gradient(135deg,rgba(21,101,192,.2),rgba(13,71,161,.1))}
 .role-card.rc-judge::before{background:linear-gradient(135deg,rgba(69,39,160,.2),rgba(49,27,146,.1))}
 .role-card.rc-inspector::before{background:linear-gradient(135deg,rgba(0,105,92,.2),rgba(0,77,64,.1))}
@@ -125,9 +125,9 @@ input::placeholder{color:var(--ink4)}
 .rc-admin .rc-icon{background:rgba(21,101,192,.25)}
 .rc-judge .rc-icon{background:rgba(124,77,255,.25)}
 .rc-inspector .rc-icon{background:rgba(38,166,154,.25)}
-.rc-title{font-size:17px;font-weight:900;color:#fff;margin-bottom:8px}
-.rc-desc{font-size:12px;color:rgba(255,255,255,.5);line-height:1.7}
-.rc-check{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.2);
+.rc-title{font-size:17px;font-weight:900;color:#0f172a;margin-bottom:8px}
+.rc-desc{font-size:12px;color:#64748B;line-height:1.7}
+.rc-check{width:22px;height:22px;border-radius:50%;border:2px solid #CBD5E1;
   position:absolute;top:16px;left:16px;transition:all .2s;display:flex;align-items:center;justify-content:center}
 .role-card.selected .rc-check{background:var(--blue);border-color:var(--blue);font-size:12px}
 .rc-judge.selected .rc-check{background:#7C4DFF;border-color:#7C4DFF}
@@ -149,31 +149,31 @@ input::placeholder{color:var(--ink4)}
    ADMIN LOGIN SCREEN
 ═══════════════════════════════════════════ */
 #screen-admin-login{min-height:100vh;padding:20px}
-.auth-bg{position:fixed;inset:0;z-index:-1;background:linear-gradient(135deg,#0D1117,#1a237e,#0D1117)}
+.auth-bg{position:fixed;inset:0;z-index:-1;background:linear-gradient(150deg,#EEF2FF 0%,#F0F9FF 50%,#E0F2FE 100%)}
 .auth-wrap{max-width:420px;margin:0 auto;padding:60px 20px}
-.auth-back{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.5);
+.auth-back{display:inline-flex;align-items:center;gap:6px;color:#64748B;
   font-size:13px;cursor:pointer;margin-bottom:32px;transition:color .2s}
-.auth-back:hover{color:rgba(255,255,255,.9)}
-.auth-card{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);
-  border-radius:var(--r20);padding:32px;backdrop-filter:blur(20px)}
+.auth-back:hover{color:#0f172a}
+.auth-card{background:#FFFFFF;border:1.5px solid #E2E8F0;
+  border-radius:var(--r20);padding:32px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
 .auth-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;
-  justify-content:center;font-size:24px;margin:0 auto 16px;background:rgba(21,101,192,.3)}
-.auth-title{font-size:20px;font-weight:900;color:#fff;text-align:center;margin-bottom:6px}
-.auth-sub{font-size:13px;color:rgba(255,255,255,.45);text-align:center;margin-bottom:24px;line-height:1.7}
+  justify-content:center;font-size:24px;margin:0 auto 16px;background:rgba(21,101,192,.12)}
+.auth-title{font-size:20px;font-weight:900;color:#0f172a;text-align:center;margin-bottom:6px}
+.auth-sub{font-size:13px;color:#64748B;text-align:center;margin-bottom:24px;line-height:1.7}
 .auth-field{margin-bottom:14px}
-.auth-field label{display:block;font-size:12px;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:6px}
-.auth-field input{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);
-  color:#fff;border-radius:var(--r10)}
-.auth-field input::placeholder{color:rgba(255,255,255,.3)}
-.auth-field input:focus{border-color:var(--blue);background:rgba(255,255,255,.12)}
+.auth-field label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:6px}
+.auth-field input{background:#F8FAFC;border-color:#CBD5E1;
+  color:#111;border-radius:var(--r10)}
+.auth-field input::placeholder{color:#9CA3AF}
+.auth-field input:focus{border-color:var(--blue);background:#fff}
 .auth-btn{width:100%;justify-content:center;padding:12px;font-size:14px;
   background:linear-gradient(135deg,var(--blue),#1976D2);border:none;border-radius:var(--r10);
   color:#fff;font-family:var(--font);font-weight:700;cursor:pointer;transition:all .2s;margin-top:6px}
 .auth-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,101,192,.4)}
 .auth-btn:disabled{opacity:.4;cursor:not-allowed}
 .auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0}
-.auth-divider span{font-size:11px;color:rgba(255,255,255,.3)}
-.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.1)}
+.auth-divider span{font-size:11px;color:#94A3B8}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:#E2E8F0}
 
 /* ═══════════════════════════════════════════
    JUDGE LOGIN SCREEN
@@ -194,13 +194,13 @@ input::placeholder{color:var(--ink4)}
 ═══════════════════════════════════════════ */
 #screen-waiting,#screen-refused{min-height:100vh}
 .status-wrap{text-align:center;max-width:360px;width:90%;
-  background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);
-  border-radius:var(--r20);padding:40px 28px;color:#fff}
-.status-wrap h2{font-size:20px;font-weight:900;margin-bottom:12px}
-.status-wrap p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.9}
-.refused-wrap h2{color:#ef5350}
-.spinner{width:44px;height:44px;border:3px solid rgba(255,255,255,.15);
-  border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
+  background:#fff;border:1.5px solid #E2E8F0;
+  border-radius:var(--r20);padding:40px 28px;color:#0f172a;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.status-wrap h2{font-size:20px;font-weight:900;margin-bottom:12px;color:#0f172a}
+.status-wrap p{font-size:13px;color:#64748B;line-height:1.9}
+.refused-wrap h2{color:#B71C1C}
+.spinner{width:44px;height:44px;border:3px solid #E2E8F0;
+  border-top-color:#1565C0;border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ═══════════════════════════════════════════
@@ -404,8 +404,8 @@ input::placeholder{color:var(--ink4)}
   <div class="role-wrap">
     <div class="role-header">
       <div class="badge-header">⚖️ &nbsp; منصة تحكيم المناظرات العربية</div>
-      <h1>من أنت في هذه الجلسة؟</h1>
-      <p>اختر دورك للمتابعة. كل دور يفتح لك واجهة مخصصة ومختلفة.</p>
+      <h1>أهلاً وسهلاً! ✨</h1>
+      <p>اختر دورك وانطلق مباشرةً — كل دور يفتح لك واجهة خاصة ومصممة خصيصاً لك.</p>
     </div>
     <div class="role-cards">
       <div class="role-card rc-admin" onclick="selectRole('admin')">
@@ -427,12 +427,7 @@ input::placeholder{color:var(--ink4)}
         <div class="rc-desc">يتابع النتائج والدرجات لحظةً بلحظة دون صلاحية تعديل أي شيء</div>
       </div>
     </div>
-    <div class="role-divider"></div>
-    <div class="role-continue-wrap">
-      <button class="role-continue-btn" id="role-continue-btn" onclick="proceedRole()">
-        متابعة <span style="font-size:16px">←</span>
-      </button>
-    </div>
+
   </div>
 </div>
 
@@ -444,7 +439,7 @@ input::placeholder{color:var(--ink4)}
   <div class="auth-wrap" style="width:100%">
     <div class="auth-back" onclick="goBackToRole()">← العودة لاختيار الدور</div>
     <div class="auth-card">
-      <div class="auth-icon">👑</div>
+      <div class="auth-icon">⚙️</div>
       <div class="auth-title">لوحة المسؤول</div>
       <div class="auth-sub">أنشئ جلسةً جديدة أو استعد جلسةً موجودة بكلمة مرورك</div>
       <div class="auth-field">
@@ -470,11 +465,11 @@ input::placeholder{color:var(--ink4)}
 <!-- JUDGE LOGIN -->
 <!-- ══════════════════════════════════════════ -->
 <div id="screen-judge-login" class="screen flex-center">
-  <div class="auth-bg" style="background:linear-gradient(135deg,#0D1117,#311B92,#0D1117)"></div>
+  <div class="auth-bg" style="background:linear-gradient(150deg,#F5F3FF 0%,#EEF2FF 100%)"></div>
   <div class="auth-wrap" style="width:100%">
     <div class="auth-back" onclick="goBackToRole()">← العودة لاختيار الدور</div>
-    <div class="auth-card" style="border-color:rgba(124,77,255,.25)">
-      <div class="auth-icon" style="background:rgba(124,77,255,.25)">🧑‍⚖️</div>
+    <div class="auth-card" style="border-color:#DDD6FE">
+      <div class="auth-icon" style="background:rgba(124,77,255,.12)">🧑‍⚖️</div>
       <div class="auth-title">طلب الانضمام كحكم</div>
       <div class="auth-sub">أدخل رمز الجلسة واسمك الكامل. سيراجع المسؤول طلبك ويقبله أو يرفضه.</div>
       <div class="auth-field">
@@ -494,11 +489,11 @@ input::placeholder{color:var(--ink4)}
 <!-- INSPECTOR LOGIN -->
 <!-- ══════════════════════════════════════════ -->
 <div id="screen-inspector-login" class="screen flex-center">
-  <div class="auth-bg" style="background:linear-gradient(135deg,#0D1117,#004D40,#0D1117)"></div>
+  <div class="auth-bg" style="background:linear-gradient(150deg,#F0FDFB 0%,#ECFDF5 100%)"></div>
   <div class="auth-wrap" style="width:100%">
     <div class="auth-back" onclick="goBackToRole()">← العودة لاختيار الدور</div>
-    <div class="auth-card" style="border-color:rgba(38,166,154,.25)">
-      <div class="auth-icon" style="background:rgba(38,166,154,.25)">👁️</div>
+    <div class="auth-card" style="border-color:#A7F3D0">
+      <div class="auth-icon" style="background:rgba(16,185,129,.12)">👁️</div>
       <div class="auth-title">دخول المراقب</div>
       <div class="auth-sub">أدخل رمز الجلسة فقط. لا تحتاج إذناً — ستتابع كل شيء في الوقت الفعلي.</div>
       <div class="auth-field">
@@ -514,7 +509,7 @@ input::placeholder{color:var(--ink4)}
 <!-- WAITING / REFUSED -->
 <!-- ══════════════════════════════════════════ -->
 <div id="screen-waiting" class="screen flex-center">
-  <div class="auth-bg" style="background:linear-gradient(135deg,#0D1117,#311B92,#0D1117)"></div>
+  <div class="auth-bg" style="background:linear-gradient(150deg,#EEF2FF,#F0F9FF)"></div>
   <div class="status-wrap">
     <h2>⏳ في انتظار الموافقة</h2>
     <div class="spinner"></div>
@@ -522,7 +517,7 @@ input::placeholder{color:var(--ink4)}
   </div>
 </div>
 <div id="screen-refused" class="screen flex-center">
-  <div class="auth-bg"></div>
+  <div class="auth-bg" style="background:linear-gradient(150deg,#FFF1F2,#FFF5F5)"></div>
   <div class="status-wrap refused-wrap">
     <h2>✕ تم رفض طلبك</h2>
     <p style="margin-bottom:20px">عذراً، رفض المسؤول طلب انضمامك إلى هذه الجلسة.</p>
@@ -536,12 +531,13 @@ input::placeholder{color:var(--ink4)}
 <div id="screen-admin" class="screen block">
   <div class="topbar">
     <div class="topbar-left">
-      <div class="topbar-role-badge">👑 المسؤول</div>
+      <div class="topbar-role-badge">⚙️ المسؤول</div>
       <h1>منصة تحكيم المناظرات</h1>
     </div>
     <div class="topbar-right">
       <span style="color:rgba(255,255,255,.4);font-size:12px">الرمز:</span>
       <button class="code-chip" id="admin-code-display" onclick="copyCode()" title="انقر للنسخ">——</button>
+      <span id="insp-count-badge" style="background:rgba(38,166,154,.25);border:1px solid rgba(38,166,154,.4);color:#80CBC4;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;display:none">👁️ <span id="insp-count-num">0</span> مراقب</span>
       <span id="admin-status-badge" class="status-bdg bdg-waiting">⏳ انتظار</span>
       <button class="btn btn-ghost btn-sm" onclick="adminExport()">📋</button>
       <button class="btn btn-amber btn-sm" onclick="finalResultPrint()">📄 النتيجة النهائية</button>
@@ -820,9 +816,12 @@ window.selectRole = function(role){
   document.querySelectorAll('.role-card').forEach(c=>c.classList.remove('selected'));
   const map={admin:'.rc-admin',judge:'.rc-judge',inspector:'.rc-inspector'};
   document.querySelector(map[role]).classList.add('selected');
-  const checkMap={admin:'✓',judge:'✓',inspector:'✓'};
   document.querySelector(map[role]+' .rc-check').textContent='✓';
-  $id('role-continue-btn').classList.add('ready');
+  // Navigate immediately
+  setTimeout(()=>{
+    const dest={admin:'screen-admin-login',judge:'screen-judge-login',inspector:'screen-inspector-login'};
+    showScreen(dest[role]);
+  },180);
 };
 
 window.proceedRole = function(){
@@ -914,6 +913,17 @@ function listenApproval(){
   listeners.push(unsub);
 }
 
+// ── INSPECTOR PRESENCE ──
+function trackInspectorPresence(){
+  if(!db||!sessionCode)return;
+  const presRef=ref(db,`sessions/${sessionCode}/inspectors/${Date.now()+Math.random()}`);
+  // Write presence, clean up on disconnect using onDisconnect
+  import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js").then(({onDisconnect})=>{
+    set(presRef,{t:Date.now()});
+    onDisconnect(presRef).remove();
+  }).catch(()=>{ set(presRef,{t:Date.now()}); });
+}
+
 // ── INSPECTOR JOIN ──
 window.goInspect = async function(){
   const code=$id('insp-code').value.trim().toUpperCase();
@@ -951,6 +961,13 @@ function renderAdmin(data){
   renderRequests(data.requests||{},data.judgeSlots||{});
   renderSlots(data.judgeSlots||{},data.judgeNames||{});
   renderAdminScores(data);
+  // Inspector count
+  const inspectors=data.inspectors||{};
+  const now=Date.now();
+  const activeInsp=Object.values(inspectors).filter(v=>v&&(now-(v.t||0))<30000).length;
+  const badge=$id('insp-count-badge'),num=$id('insp-count-num');
+  if(badge){badge.style.display=activeInsp>0?'inline-flex':'none';}
+  if(num)num.textContent=activeInsp;
   const fb=$id('btn-final');
   fb.disabled=!!data.finalSubmitted;
   fb.textContent=data.finalSubmitted?'✅ تم الإرسال':'🏁 إرسال النتيجة';
@@ -1194,6 +1211,12 @@ let inspData={};
 function startInspector(){
   showScreen('screen-inspector');
   $id('insp-code-display').textContent=sessionCode;
+  // Write presence every 10s so admin sees live count
+  const presKey='insp_'+Date.now();
+  const presRef=ref(db,`sessions/${sessionCode}/inspectors/${presKey}`);
+  set(presRef,{t:Date.now()});
+  const keepAlive=setInterval(()=>update(presRef,{t:Date.now()}),10000);
+  window.addEventListener('beforeunload',()=>{ clearInterval(keepAlive); remove(presRef); });
   listeners.forEach(u=>u()); listeners=[];
   const unsub=onValue(sessionRef,snap=>{
     if(!snap.exists())return;
@@ -1240,6 +1263,20 @@ function renderInspector(data){
           <span class="insp-crit-score">${cv}/${maxCrit}</span>
         </div>`;
       }
+      // Notes from judges in inspector view
+      const notesData=data.notes||{};
+      let hasNotes=false;
+      let noteRows='';
+      for(let j=1;j<=NJ;j++){
+        const jNoteArr=(notesData[j]||[])[t];
+        const note=Array.isArray(jNoteArr)?jNoteArr[m]:(typeof jNoteArr==='object'&&jNoteArr?jNoteArr[m]:'');
+        if(note&&note.trim()){
+          const jName=(data.judgeNames||{})[j]||('حكم '+arabicNum(j));
+          noteRows+=`<div style="display:flex;gap:6px;margin-bottom:3px;font-size:11px"><span style="font-weight:700;color:#92400E;white-space:nowrap">${esc(jName)}:</span><span style="color:#374151">${esc(note.trim())}</span></div>`;
+          hasNotes=true;
+        }
+      }
+      if(hasNotes) html+=`<div style="margin:6px 0 2px;background:#FFFBF0;border:1px solid #FEF3C7;border-radius:6px;padding:8px 10px"><div style="font-size:10px;font-weight:700;color:#92400E;margin-bottom:4px">💬 ملاحظات الحكام</div>${noteRows}</div>`;
       html+=`</div>`;
     }
     $id(`insp-team-${t}`).innerHTML=html;
@@ -1367,6 +1404,23 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;fon
 .ph-logo{font-size:11px;font-weight:700;color:#64748b;letter-spacing:1px}
 .ph-title{font-size:18px;font-weight:900;color:#0f172a;text-align:center;flex:1;padding:0 10px}
 .ph-meta{font-size:11px;color:#64748b;text-align:left;white-space:nowrap}
+/* ── MATCH IDENTITY ── */
+.match-identity{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;margin-bottom:14px;
+  border:2px solid #E2E8F0;border-radius:10px;overflow:hidden}
+.mi-team{padding:12px 14px;text-align:center}
+.mi-team-a{background:#EEF7FF;border-left:4px solid #1565C0}
+.mi-team-b{background:#F3F0FF;border-right:4px solid #4527A0}
+.mi-role{font-size:9px;font-weight:700;letter-spacing:1.5px;color:#94A3B8;margin-bottom:4px;text-transform:uppercase}
+.mi-name{font-size:14px;font-weight:900;color:#0f172a;margin-bottom:6px;line-height:1.3}
+.mi-team-a .mi-name{color:#1565C0}.mi-team-b .mi-name{color:#4527A0}
+.mi-members{display:flex;flex-direction:column;gap:2px}
+.mi-members span{font-size:10px;color:#475569;background:#fff;border-radius:3px;padding:1px 6px;display:inline-block}
+.mi-vs{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;
+  background:#F8FAFC;border-left:1.5px solid #E2E8F0;border-right:1.5px solid #E2E8F0;min-width:90px}
+.mi-vs-topic{font-size:9px;color:#64748B;text-align:center;margin-bottom:6px;font-weight:600;max-width:80px;line-height:1.4}
+.mi-vs-circle{width:32px;height:32px;background:#0f172a;color:#fff;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;margin:4px auto}
+.mi-vs-flat{font-size:9px;color:#64748B;margin-top:6px;font-weight:600}
 /* ── WINNER BANNER ── */
 .winner-banner{border-radius:10px;padding:14px 20px;text-align:center;margin-bottom:16px;
   border:2px solid ${WIN_BORDER};background:${WIN_BG};color:${WIN_TEXT}}
@@ -1383,7 +1437,7 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;fon
 .tc-head{padding:8px 12px;font-size:13px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
 .tc-head-a{background:${A_MAIN};color:#fff}.tc-head-b{background:${B_MAIN};color:#fff}
 .tc-head-total{font-size:17px;font-weight:900;opacity:.95}
-.crit-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #f1f5f9;background:#fff}
+.crit-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #CBD5E1;background:#fff}
 .crit-row:last-child{border-bottom:none}
 .crit-num{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   font-size:9px;font-weight:900;flex-shrink:0;color:#fff}
@@ -1397,11 +1451,11 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;fon
 .crit-max{font-size:9px;color:#9ca3af;flex-shrink:0}
 /* ── VS DIVIDER ── */
 .vs-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.vs-bar::before,.vs-bar::after{content:'';flex:1;height:1px;background:#e2e8f0}
+.vs-bar::before,.vs-bar::after{content:'';flex:1;height:1px;background:#94A3B8}
 .vs-text{font-size:11px;font-weight:900;color:#9ca3af;letter-spacing:2px}
 /* ── SCORE COMPARISON ── */
 .score-compare{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:0;margin-bottom:14px;
-  border:1.5px solid #e2e8f0;border-radius:8px;overflow:hidden}
+  border:2px solid #94A3B8;border-radius:8px;overflow:hidden}
 .sc-team{padding:12px 10px;text-align:center}
 .sc-team-a{background:${A_LIGHT}}.sc-team-b{background:${B_LIGHT}}
 .sc-name{font-size:11px;font-weight:700;margin-bottom:4px}
@@ -1409,19 +1463,19 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;fon
 .sc-score{font-size:30px;font-weight:900}
 .sc-score-a{color:${A_MAIN}}.sc-score-b{color:${B_MAIN}}
 .sc-max{font-size:10px;color:#9ca3af}
-.sc-middle{background:#f8fafc;padding:12px 8px;text-align:center;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0}
+.sc-middle{background:#F1F5F9;padding:12px 8px;text-align:center;border-left:1.5px solid #94A3B8;border-right:1.5px solid #94A3B8}
 .sc-middle-icon{font-size:18px;display:block}
 .sc-middle-diff{font-size:10px;color:#64748b;margin-top:3px}
 /* ── JUDGES STRIP ── */
-.judges-strip{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;
+.judges-strip{background:#F1F5F9;border:1.5px solid #94A3B8;border-radius:6px;
   padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .js-label{font-size:10px;font-weight:700;color:#64748b;white-space:nowrap}
-.judge-pill{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid #e2e8f0;
+.judge-pill{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1.5px solid #94A3B8;
   border-radius:20px;padding:3px 9px;font-size:10px;font-weight:600;color:#374151}
 .jp-num{width:16px;height:16px;background:#1565C0;color:#fff;border-radius:50%;
   display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;flex-shrink:0}
 /* ── FOOTER ── */
-.page-footer{border-top:1px solid #e2e8f0;padding-top:8px;display:flex;justify-content:space-between;
+.page-footer{border-top:2px solid #94A3B8;padding-top:8px;display:flex;justify-content:space-between;
   align-items:center;font-size:9px;color:#9ca3af;margin-top:4px}
 @media print{
   body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -1433,6 +1487,24 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;fon
   <div class="ph-logo">⚖️ منصة تحكيم المناظرات</div>
   <div class="ph-title">${esc(topic)}</div>
   <div class="ph-meta">رقم الشقة: ${esc(flatN)}</div>
+</div>
+
+<div class="match-identity">
+  <div class="mi-team mi-team-a">
+    <div class="mi-role">الفريق المؤيد</div>
+    <div class="mi-name">${esc(tN[0])}</div>
+    <div class="mi-members">${(mN[0]||[])[0]?'<span>'+esc((mN[0]||[])[0])+'</span>':''}${(mN[0]||[])[1]?'<span>'+esc((mN[0]||[])[1])+'</span>':''}${(mN[0]||[])[2]?'<span>'+esc((mN[0]||[])[2])+'</span>':''}</div>
+  </div>
+  <div class="mi-vs">
+    <div class="mi-vs-topic">${esc(topic)}</div>
+    <div class="mi-vs-circle">VS</div>
+    <div class="mi-vs-flat">شقة ${esc(flatN)}</div>
+  </div>
+  <div class="mi-team mi-team-b">
+    <div class="mi-role">الفريق المعارض</div>
+    <div class="mi-name">${esc(tN[1])}</div>
+    <div class="mi-members">${(mN[1]||[])[0]?'<span>'+esc((mN[1]||[])[0])+'</span>':''}${(mN[1]||[])[1]?'<span>'+esc((mN[1]||[])[1])+'</span>':''}${(mN[1]||[])[2]?'<span>'+esc((mN[1]||[])[2])+'</span>':''}</div>
+  </div>
 </div>
 
 <div class="winner-banner">
@@ -1544,7 +1616,7 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#f8fafc;color:#111;
 .team-head-a{background:linear-gradient(135deg,#1565C0,#1e40af);color:#fff}
 .team-head-b{background:linear-gradient(135deg,#4527A0,#6d28d9);color:#fff}
 .team-head .t-total{font-size:22px;font-weight:900;opacity:.95}
-.member-row{background:#fff;border-bottom:1px solid #f1f5f9;padding:14px 18px}
+.member-row{background:#fff;border-bottom:1.5px solid #CBD5E1;padding:14px 18px}
 .member-row:last-child{border-bottom:none}
 .mem-name{font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px;display:flex;justify-content:space-between}
 .mem-total-badge-a{background:#dbeafe;color:#1565C0;border-radius:4px;padding:2px 10px;font-size:13px;font-weight:900}
@@ -1552,7 +1624,7 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#f8fafc;color:#111;
 .crit-grid{display:flex;flex-direction:column;gap:6px}
 .crit-item{display:flex;align-items:center;gap:10px}
 .crit-lbl{font-size:11px;color:#475569;width:220px;flex-shrink:0;text-align:right}
-.bar-bg{flex:1;height:10px;background:#f1f5f9;border-radius:5px;overflow:hidden}
+.bar-bg{flex:1;height:10px;background:#E2E8F0;border-radius:5px;overflow:hidden}
 .bar-fg-a{height:100%;background:linear-gradient(90deg,#3b82f6,#1d4ed8);border-radius:5px}
 .bar-fg-b{height:100%;background:linear-gradient(90deg,#8b5cf6,#6d28d9);border-radius:5px}
 .crit-score{font-size:12px;font-weight:900;width:40px;text-align:center;flex-shrink:0;color:#0f172a}
@@ -1569,8 +1641,13 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#f8fafc;color:#111;
 .winner-strip{text-align:center;padding:14px;border-radius:10px;font-size:16px;font-weight:900;margin-bottom:20px}
 .ws-a{background:#eff6ff;color:#1565C0;border:2px solid #bfdbfe}
 .ws-b{background:#f5f3ff;color:#4527A0;border:2px solid #ddd6fe}
-.ws-draw{background:#f8fafc;color:#475569;border:2px solid #e2e8f0}
+.ws-draw{background:#F1F5F9;color:#334155;border:2px solid #94A3B8}
 .note{text-align:center;font-size:11px;color:#94a3b8;margin-top:18px}
+.notes-section{margin-top:8px;background:#FFFBF0;border:1px solid #FEF3C7;border-radius:6px;padding:8px 12px}
+.notes-label{font-size:10px;font-weight:700;color:#92400E;margin-bottom:5px}
+.note-row{display:flex;gap:8px;margin-bottom:3px;align-items:flex-start}
+.note-judge{font-size:10px;font-weight:700;color:#B45309;white-space:nowrap;flex-shrink:0}
+.note-txt{font-size:11px;color:#374151;line-height:1.5}
 @media(max-width:600px){.crit-lbl{width:130px}.final-compare{grid-template-columns:1fr}}
 @media print{body{padding:10px;background:#f8fafc!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
@@ -1612,6 +1689,17 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#f8fafc;color:#111;
           <span class="crit-max">/${maxCrit}</span>
         </div>`;
       }
+      // Notes from judges
+      let notesHtml='';
+      for(let j=1;j<=NJ;j++){
+        const jNote=((data.notes||{})[j]||[])[t];
+        const note=Array.isArray(jNote)?jNote[m]:(jNote&&jNote[m])||'';
+        if(note&&note.trim()){
+          const jN=(data.judgeNames||{})[j]||('حكم '+arabicNum(j));
+          notesHtml+=`<div class="note-row"><span class="note-judge">${esc(jN)}:</span><span class="note-txt">${esc(note.trim())}</span></div>`;
+        }
+      }
+      if(notesHtml) H+=`<div class="notes-section"><div class="notes-label">💬 ملاحظات الحكام</div>${notesHtml}</div>`;
       H+=`</div></div>`;
     }
     H+=`</div>`;
