@@ -26,7 +26,10 @@ html,body{height:100%}
 body{font-family:var(--font);direction:rtl;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh}
 
 /* ── SCREENS ── */
-.screen{display:none}
+.screen{display:none!important}
+.screen.active{display:flex!important;flex-direction:column}
+.screen.active.flex-center{justify-content:center;align-items:center;min-height:100vh}
+.screen.active.block{display:block!important}
 
 /* ── TOAST ── */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
@@ -74,59 +77,59 @@ input::placeholder{color:var(--ink4)}
 #screen-role{min-height:100vh;padding:20px}
 .role-bg{
   position:fixed;inset:0;z-index:-1;
-  background:linear-gradient(150deg,#EEF2FF 0%,#F0F9FF 40%,#ECFDF5 100%);
+  background:linear-gradient(135deg,#EEF2FF 0%,#DBEAFE 30%,#E0F7FA 65%,#F0FDF4 100%);
 }
 .role-bg::before{
   content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at 25% 60%,rgba(99,102,241,.12) 0%,transparent 55%),
-             radial-gradient(ellipse at 75% 25%,rgba(16,185,129,.1) 0%,transparent 50%);
+  background:radial-gradient(ellipse at 30% 50%,rgba(99,102,241,.12) 0%,transparent 60%),
+             radial-gradient(ellipse at 70% 20%,rgba(59,130,246,.10) 0%,transparent 55%);
 }
 .role-wrap{max-width:960px;margin:0 auto;padding:40px 20px}
-.role-header{text-align:center;margin-bottom:48px;color:#0f172a}
+.role-header{text-align:center;margin-bottom:48px;color:#1e293b}
 .role-header .badge-header{
   display:inline-flex;align-items:center;gap:8px;
-  background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);
-  border-radius:30px;padding:6px 18px;font-size:12px;color:#4338CA;
+  background:rgba(99,102,241,.10);border:1px solid rgba(99,102,241,.25);
+  border-radius:30px;padding:6px 18px;font-size:12px;color:#4f46e5;
   margin-bottom:20px;letter-spacing:1px
 }
 .role-header h1{font-size:clamp(24px,5vw,38px);font-weight:900;line-height:1.2;
-  background:linear-gradient(135deg,#1565C0 0%,#4527A0 100%);
+  background:linear-gradient(135deg,#1e40af 0%,#4f46e5 50%,#0891b2 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
   margin-bottom:12px}
-.role-header p{font-size:15px;color:#64748B;max-width:500px;margin:0 auto;line-height:1.8}
+.role-header p{font-size:15px;color:#475569;max-width:500px;margin:0 auto;line-height:1.8}
 .role-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
 @media(max-width:700px){.role-cards{grid-template-columns:1fr;max-width:360px;margin:0 auto 32px}}
 .role-card{
-  background:#FFFFFF;
-  border:1.5px solid #E2E8F0;
+  background:rgba(255,255,255,.85);
+  border:1.5px solid rgba(99,102,241,.15);
   border-radius:var(--r20);padding:28px 22px;
   cursor:pointer;transition:all .25s;position:relative;overflow:hidden;
-  text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.06);
+  text-align:center;box-shadow:0 4px 20px rgba(99,102,241,.08);
 }
 .role-card::before{
   content:'';position:absolute;inset:0;opacity:0;transition:opacity .25s;border-radius:inherit;
 }
-.role-card:hover{border-color:#CBD5E1;transform:translateY(-4px);
-  box-shadow:0 12px 32px rgba(0,0,0,.1)}
-.role-card.rc-admin::before{background:linear-gradient(135deg,rgba(21,101,192,.2),rgba(13,71,161,.1))}
-.role-card.rc-judge::before{background:linear-gradient(135deg,rgba(69,39,160,.2),rgba(49,27,146,.1))}
-.role-card.rc-inspector::before{background:linear-gradient(135deg,rgba(0,105,92,.2),rgba(0,77,64,.1))}
+.role-card:hover{border-color:rgba(99,102,241,.4);transform:translateY(-4px);
+  box-shadow:0 16px 40px rgba(99,102,241,.15)}
+.role-card.rc-admin::before{background:linear-gradient(135deg,rgba(21,101,192,.08),rgba(13,71,161,.04))}
+.role-card.rc-judge::before{background:linear-gradient(135deg,rgba(69,39,160,.08),rgba(49,27,146,.04))}
+.role-card.rc-inspector::before{background:linear-gradient(135deg,rgba(0,105,92,.08),rgba(0,77,64,.04))}
 .role-card:hover::before{opacity:1}
 .role-card.selected{border-width:2px;transform:translateY(-4px)}
-.role-card.rc-admin.selected{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,101,192,.2),0 16px 40px rgba(0,0,0,.3)}
-.role-card.rc-judge.selected{border-color:#7C4DFF;box-shadow:0 0 0 3px rgba(124,77,255,.2),0 16px 40px rgba(0,0,0,.3)}
-.role-card.rc-inspector.selected{border-color:#26A69A;box-shadow:0 0 0 3px rgba(38,166,154,.2),0 16px 40px rgba(0,0,0,.3)}
+.role-card.rc-admin.selected{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,101,192,.15),0 16px 40px rgba(21,101,192,.12)}
+.role-card.rc-judge.selected{border-color:#7C4DFF;box-shadow:0 0 0 3px rgba(124,77,255,.15),0 16px 40px rgba(124,77,255,.12)}
+.role-card.rc-inspector.selected{border-color:#26A69A;box-shadow:0 0 0 3px rgba(38,166,154,.15),0 16px 40px rgba(38,166,154,.12)}
 .rc-icon{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;
   font-size:26px;margin:0 auto 16px;transition:transform .25s}
 .role-card:hover .rc-icon{transform:scale(1.1)}
-.rc-admin .rc-icon{background:rgba(21,101,192,.25)}
-.rc-judge .rc-icon{background:rgba(124,77,255,.25)}
-.rc-inspector .rc-icon{background:rgba(38,166,154,.25)}
-.rc-title{font-size:17px;font-weight:900;color:#0f172a;margin-bottom:8px}
-.rc-desc{font-size:12px;color:#64748B;line-height:1.7}
-.rc-check{width:22px;height:22px;border-radius:50%;border:2px solid #CBD5E1;
+.rc-admin .rc-icon{background:rgba(21,101,192,.12)}
+.rc-judge .rc-icon{background:rgba(124,77,255,.12)}
+.rc-inspector .rc-icon{background:rgba(38,166,154,.12)}
+.rc-title{font-size:17px;font-weight:900;color:#1e293b;margin-bottom:8px}
+.rc-desc{font-size:12px;color:#64748b;line-height:1.7}
+.rc-check{width:22px;height:22px;border-radius:50%;border:2px solid rgba(99,102,241,.25);
   position:absolute;top:16px;left:16px;transition:all .2s;display:flex;align-items:center;justify-content:center}
-.role-card.selected .rc-check{background:var(--blue);border-color:var(--blue);font-size:12px}
+.role-card.selected .rc-check{background:var(--blue);border-color:var(--blue);font-size:12px;color:#fff}
 .rc-judge.selected .rc-check{background:#7C4DFF;border-color:#7C4DFF}
 .rc-inspector.selected .rc-check{background:#26A69A;border-color:#26A69A}
 .role-continue-wrap{text-align:center}
@@ -136,41 +139,41 @@ input::placeholder{color:var(--ink4)}
   border:none;border-radius:50px;padding:14px 40px;
   font-family:var(--font);font-size:15px;font-weight:900;color:#fff;
   cursor:pointer;transition:all .2s;opacity:.4;pointer-events:none;
-  box-shadow:0 4px 24px rgba(21,101,192,.4)
+  box-shadow:0 4px 24px rgba(99,102,241,.25)
 }
 .role-continue-btn.ready{opacity:1;pointer-events:auto}
-.role-continue-btn.ready:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(21,101,192,.5)}
-.role-divider{width:1px;height:40px;background:rgba(255,255,255,.1);margin:0 auto 20px}
+.role-continue-btn.ready:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(99,102,241,.35)}
+.role-divider{width:1px;height:40px;background:rgba(99,102,241,.15);margin:0 auto 20px}
 
 /* ═══════════════════════════════════════════
    ADMIN LOGIN SCREEN
 ═══════════════════════════════════════════ */
 #screen-admin-login{min-height:100vh;padding:20px}
-.auth-bg{position:fixed;inset:0;z-index:-1;background:linear-gradient(150deg,#EEF2FF 0%,#F0F9FF 50%,#E0F2FE 100%)}
+.auth-bg{position:fixed;inset:0;z-index:-1;background:linear-gradient(135deg,#EEF2FF,#DBEAFE,#E0F7FA)}
 .auth-wrap{max-width:420px;margin:0 auto;padding:60px 20px}
-.auth-back{display:inline-flex;align-items:center;gap:6px;color:#64748B;
+.auth-back{display:inline-flex;align-items:center;gap:6px;color:#475569;
   font-size:13px;cursor:pointer;margin-bottom:32px;transition:color .2s}
-.auth-back:hover{color:#0f172a}
-.auth-card{background:#FFFFFF;border:1.5px solid #E2E8F0;
-  border-radius:var(--r20);padding:32px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.auth-back:hover{color:#1e293b}
+.auth-card{background:#fff;border:1.5px solid rgba(99,102,241,.2);
+  border-radius:var(--r20);padding:32px;box-shadow:0 8px 32px rgba(99,102,241,.1)}
 .auth-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;
   justify-content:center;font-size:24px;margin:0 auto 16px;background:rgba(21,101,192,.12)}
-.auth-title{font-size:20px;font-weight:900;color:#0f172a;text-align:center;margin-bottom:6px}
-.auth-sub{font-size:13px;color:#64748B;text-align:center;margin-bottom:24px;line-height:1.7}
+.auth-title{font-size:20px;font-weight:900;color:#1e293b;text-align:center;margin-bottom:6px}
+.auth-sub{font-size:13px;color:#64748b;text-align:center;margin-bottom:24px;line-height:1.7}
 .auth-field{margin-bottom:14px}
 .auth-field label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:6px}
-.auth-field input{background:#F8FAFC;border-color:#CBD5E1;
-  color:#111;border-radius:var(--r10)}
-.auth-field input::placeholder{color:#9CA3AF}
+.auth-field input{background:#f8fafc;border-color:#cbd5e1;
+  color:#1e293b;border-radius:var(--r10)}
+.auth-field input::placeholder{color:#94a3b8}
 .auth-field input:focus{border-color:var(--blue);background:#fff}
 .auth-btn{width:100%;justify-content:center;padding:12px;font-size:14px;
   background:linear-gradient(135deg,var(--blue),#1976D2);border:none;border-radius:var(--r10);
   color:#fff;font-family:var(--font);font-weight:700;cursor:pointer;transition:all .2s;margin-top:6px}
-.auth-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,101,192,.4)}
+.auth-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,101,192,.3)}
 .auth-btn:disabled{opacity:.4;cursor:not-allowed}
 .auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0}
-.auth-divider span{font-size:11px;color:#94A3B8}
-.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:#E2E8F0}
+.auth-divider span{font-size:11px;color:#94a3b8}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:#e2e8f0}
 
 /* ═══════════════════════════════════════════
    JUDGE LOGIN SCREEN
@@ -191,13 +194,13 @@ input::placeholder{color:var(--ink4)}
 ═══════════════════════════════════════════ */
 #screen-waiting,#screen-refused{min-height:100vh}
 .status-wrap{text-align:center;max-width:360px;width:90%;
-  background:#fff;border:1.5px solid #E2E8F0;
-  border-radius:var(--r20);padding:40px 28px;color:#0f172a;box-shadow:0 4px 24px rgba(0,0,0,.08)}
-.status-wrap h2{font-size:20px;font-weight:900;margin-bottom:12px;color:#0f172a}
-.status-wrap p{font-size:13px;color:#64748B;line-height:1.9}
-.refused-wrap h2{color:#B71C1C}
-.spinner{width:44px;height:44px;border:3px solid #E2E8F0;
-  border-top-color:#1565C0;border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
+  background:#fff;border:1.5px solid rgba(99,102,241,.2);
+  border-radius:var(--r20);padding:40px 28px;color:#1e293b;box-shadow:0 8px 32px rgba(99,102,241,.1)}
+.status-wrap h2{font-size:20px;font-weight:900;margin-bottom:12px}
+.status-wrap p{font-size:13px;color:#64748b;line-height:1.9}
+.refused-wrap h2{color:#ef5350}
+.spinner{width:44px;height:44px;border:3px solid rgba(99,102,241,.2);
+  border-top-color:#6366f1;border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ═══════════════════════════════════════════
@@ -396,42 +399,47 @@ input::placeholder{color:var(--ink4)}
 <!-- ══════════════════════════════════════════ -->
 <!-- ROLE SELECTION -->
 <!-- ══════════════════════════════════════════ -->
-<div id="screen-role" class="screen" style="display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh">
+<div id="screen-role" class="screen active flex-center">
   <div class="role-bg"></div>
   <div class="role-wrap">
     <div class="role-header">
       <div class="badge-header">⚖️ &nbsp; منصة تحكيم المناظرات العربية</div>
-      <h1>أهلاً وسهلاً! ✨</h1>
-      <p>اختر دورك وانطلق مباشرةً — كل دور يفتح لك واجهة خاصة ومصممة خصيصاً لك.</p>
+      <h1>مرحباً بك! 🌟 كيف تودّ المشاركة اليوم؟</h1>
+      <p>اختر دورك للمتابعة. كل دور يفتح لك واجهة مخصصة ومختلفة.</p>
     </div>
     <div class="role-cards">
-      <div class="role-card rc-admin" data-role="admin">
+      <div class="role-card rc-admin" onclick="selectRole('admin')">
         <div class="rc-check"></div>
-        <div class="rc-icon">👑</div>
+        <div class="rc-icon">⚙️</div>
         <div class="rc-title">المسؤول</div>
         <div class="rc-desc">ينشئ الجلسة، يدير الحكام، يتحكم في كل شيء، ويُصدر النتيجة النهائية</div>
       </div>
-      <div class="role-card rc-judge" data-role="judge">
+      <div class="role-card rc-judge" onclick="selectRole('judge')">
         <div class="rc-check"></div>
         <div class="rc-icon">🧑‍⚖️</div>
         <div class="rc-title">الحكم</div>
         <div class="rc-desc">يطلب الانضمام بإذن المسؤول ويُقيّم المتناظرين عبر معايير التحكيم</div>
       </div>
-      <div class="role-card rc-inspector" data-role="inspector">
+      <div class="role-card rc-inspector" onclick="selectRole('inspector')">
         <div class="rc-check"></div>
         <div class="rc-icon">👁️</div>
         <div class="rc-title">المراقب</div>
         <div class="rc-desc">يتابع النتائج والدرجات لحظةً بلحظة دون صلاحية تعديل أي شيء</div>
       </div>
     </div>
-
+    <div class="role-divider"></div>
+    <div class="role-continue-wrap">
+      <button class="role-continue-btn" id="role-continue-btn" onclick="proceedRole()">
+        متابعة <span style="font-size:16px">←</span>
+      </button>
+    </div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════ -->
 <!-- ADMIN LOGIN -->
 <!-- ══════════════════════════════════════════ -->
-<div id="screen-admin-login" class="screen">
+<div id="screen-admin-login" class="screen flex-center">
   <div class="auth-bg"></div>
   <div class="auth-wrap" style="width:100%">
     <div class="auth-back" onclick="goBackToRole()">← العودة لاختيار الدور</div>
@@ -461,12 +469,12 @@ input::placeholder{color:var(--ink4)}
 <!-- ══════════════════════════════════════════ -->
 <!-- JUDGE LOGIN -->
 <!-- ══════════════════════════════════════════ -->
-<div id="screen-judge-login" class="screen">
-  <div class="auth-bg" style="background:linear-gradient(150deg,#F5F3FF 0%,#EEF2FF 100%)"></div>
+<div id="screen-judge-login" class="screen flex-center">
+  <div class="auth-bg" style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE,#E0E7FF)"></div>
   <div class="auth-wrap" style="width:100%">
     <div class="auth-back" onclick="goBackToRole()">← العودة لاختيار الدور</div>
-    <div class="auth-card" style="border-color:#DDD6FE">
-      <div class="auth-icon" style="background:rgba(124,77,255,.12)">🧑‍⚖️</div>
+    <div class="auth-card" style="border-color:rgba(124,77,255,.25)">
+      <div class="auth-icon" style="background:rgba(124,77,255,.15)">🧑‍⚖️</div>
       <div class="auth-title">طلب الانضمام كحكم</div>
       <div class="auth-sub">أدخل رمز الجلسة واسمك الكامل. سيراجع المسؤول طلبك ويقبله أو يرفضه.</div>
       <div class="auth-field">
@@ -485,12 +493,12 @@ input::placeholder{color:var(--ink4)}
 <!-- ══════════════════════════════════════════ -->
 <!-- INSPECTOR LOGIN -->
 <!-- ══════════════════════════════════════════ -->
-<div id="screen-inspector-login" class="screen">
-  <div class="auth-bg" style="background:linear-gradient(150deg,#F0FDFB 0%,#ECFDF5 100%)"></div>
+<div id="screen-inspector-login" class="screen flex-center">
+  <div class="auth-bg" style="background:linear-gradient(135deg,#E0F7FA,#E0F2F1,#ECFDF5)"></div>
   <div class="auth-wrap" style="width:100%">
     <div class="auth-back" onclick="goBackToRole()">← العودة لاختيار الدور</div>
-    <div class="auth-card" style="border-color:#A7F3D0">
-      <div class="auth-icon" style="background:rgba(16,185,129,.12)">👁️</div>
+    <div class="auth-card" style="border-color:rgba(38,166,154,.25)">
+      <div class="auth-icon" style="background:rgba(38,166,154,.15)">👁️</div>
       <div class="auth-title">دخول المراقب</div>
       <div class="auth-sub">أدخل رمز الجلسة فقط. لا تحتاج إذناً — ستتابع كل شيء في الوقت الفعلي.</div>
       <div class="auth-field">
@@ -505,20 +513,20 @@ input::placeholder{color:var(--ink4)}
 <!-- ══════════════════════════════════════════ -->
 <!-- WAITING / REFUSED -->
 <!-- ══════════════════════════════════════════ -->
-<div id="screen-waiting" class="screen">
-  <div class="auth-bg" style="background:linear-gradient(150deg,#EEF2FF,#F0F9FF)"></div>
+<div id="screen-waiting" class="screen flex-center">
+  <div class="auth-bg" style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE,#E0E7FF)"></div>
   <div class="status-wrap">
     <h2>⏳ في انتظار الموافقة</h2>
     <div class="spinner"></div>
     <p>تم إرسال طلبك إلى مسؤول الجلسة.<br>سيتم إخطارك فور الموافقة.<br><br><small style="opacity:.5">أبقِ هذه الصفحة مفتوحة</small></p>
   </div>
 </div>
-<div id="screen-refused" class="screen">
-  <div class="auth-bg" style="background:linear-gradient(150deg,#FFF1F2,#FFF5F5)"></div>
+<div id="screen-refused" class="screen flex-center">
+  <div class="auth-bg" style="background:linear-gradient(135deg,#FFF5F5,#FFEBEE,#FEF2F2)"></div>
   <div class="status-wrap refused-wrap">
     <h2>✕ تم رفض طلبك</h2>
     <p style="margin-bottom:20px">عذراً، رفض المسؤول طلب انضمامك إلى هذه الجلسة.</p>
-    <button class="btn btn-ghost" onclick="goBack()">العودة للبداية</button>
+    <button class="btn btn-red" onclick="goBack()">العودة للبداية</button>
   </div>
 </div>
 
@@ -532,9 +540,9 @@ input::placeholder{color:var(--ink4)}
       <h1>منصة تحكيم المناظرات</h1>
     </div>
     <div class="topbar-right">
+      <span id="inspector-count-badge" title="عدد المراقبين المتصلين الآن" style="display:none;background:rgba(38,166,154,.25);border:1px solid rgba(38,166,154,.5);color:#80CBC4;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;align-items:center;gap:5px">👁️ <span id="inspector-count-num">0</span> مراقب</span>
       <span style="color:rgba(255,255,255,.4);font-size:12px">الرمز:</span>
       <button class="code-chip" id="admin-code-display" onclick="copyCode()" title="انقر للنسخ">——</button>
-      <span id="insp-count-badge" style="background:rgba(38,166,154,.25);border:1px solid rgba(38,166,154,.4);color:#80CBC4;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;display:none">👁️ <span id="insp-count-num">0</span> مراقب</span>
       <span id="admin-status-badge" class="status-bdg bdg-waiting">⏳ انتظار</span>
       <button class="btn btn-ghost btn-sm" onclick="adminExport()">📋</button>
       <button class="btn btn-amber btn-sm" onclick="finalResultPrint()">📄 النتيجة النهائية</button>
@@ -708,7 +716,7 @@ input::placeholder{color:var(--ink4)}
 <!-- ══════════════════════════════════════════ -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, update, onValue, push, remove }
+import { getDatabase, ref, set, get, update, onValue, push, remove, onDisconnect as fbOnDisconnect }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -740,26 +748,14 @@ function arabicNum(n){ return ['','الأول','الثاني','الثالث','ا
 function genCode(){ return Math.random().toString(36).substring(2,8).toUpperCase(); }
 
 function showScreen(id){
-  const FLEX=['screen-role','screen-admin-login','screen-judge-login',
-              'screen-inspector-login','screen-waiting','screen-refused'];
-  const BLOCK=['screen-admin','screen-judge','screen-inspector'];
+  const flexC=['screen-role','screen-admin-login','screen-judge-login','screen-inspector-login','screen-waiting','screen-refused'];
+  const blockC=['screen-admin','screen-judge','screen-inspector'];
   document.querySelectorAll('.screen').forEach(el=>{
+    el.classList.remove('active','flex-center','block');
     if(el.id===id){
-      if(FLEX.includes(id)){
-        el.style.display='flex';
-        el.style.flexDirection='column';
-        el.style.justifyContent='center';
-        el.style.alignItems='center';
-        el.style.minHeight='100vh';
-      } else if(BLOCK.includes(id)){
-        el.style.display='block';
-        el.style.flexDirection='';
-        el.style.justifyContent='';
-        el.style.alignItems='';
-        el.style.minHeight='';
-      }
-    } else {
-      el.style.display='none';
+      el.classList.add('active');
+      if(flexC.includes(id)) el.classList.add('flex-center');
+      if(blockC.includes(id)) el.classList.add('block');
     }
   });
 }
@@ -820,41 +816,20 @@ async function initApp(){
 }
 
 // ── ROLE SELECTION ──
-// ── Role cards — direct event listeners (avoids onclick module timing issues) ──
-function initRoleCards(){
-  const dest={admin:'screen-admin-login',judge:'screen-judge-login',inspector:'screen-inspector-login'};
-  document.querySelectorAll('.role-card[data-role]').forEach(card=>{
-    card.addEventListener('click',function(){
-      const role=this.dataset.role;
-      selectedRole=role;
-      // Visual feedback — highlight selected card
-      document.querySelectorAll('.role-card').forEach(c=>c.classList.remove('selected'));
-      this.classList.add('selected');
-      const check=this.querySelector('.rc-check');
-      if(check) check.textContent='✓';
-      // Navigate after a short visual pause
-      setTimeout(()=>showScreen(dest[role]),160);
-    });
-  });
-}
-
-// Call immediately if DOM ready, else wait
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded',initRoleCards);
-} else {
-  initRoleCards();
-}
-
 window.selectRole = function(role){
-  // fallback (kept for safety)
   selectedRole=role;
-  const dest={admin:'screen-admin-login',judge:'screen-judge-login',inspector:'screen-inspector-login'};
-  showScreen(dest[role]);
+  document.querySelectorAll('.role-card').forEach(c=>c.classList.remove('selected'));
+  const map={admin:'.rc-admin',judge:'.rc-judge',inspector:'.rc-inspector'};
+  document.querySelector(map[role]).classList.add('selected');
+  const checkMap={admin:'✓',judge:'✓',inspector:'✓'};
+  document.querySelector(map[role]+' .rc-check').textContent='✓';
+  $id('role-continue-btn').classList.add('ready');
 };
+
 window.proceedRole = function(){
   if(!selectedRole) return;
-  const dest={admin:'screen-admin-login',judge:'screen-judge-login',inspector:'screen-inspector-login'};
-  showScreen(dest[selectedRole]);
+  const map={admin:'screen-admin-login',judge:'screen-judge-login',inspector:'screen-inspector-login'};
+  showScreen(map[selectedRole]);
 };
 
 window.goBackToRole = function(){ showScreen('screen-role'); };
@@ -940,17 +915,6 @@ function listenApproval(){
   listeners.push(unsub);
 }
 
-// ── INSPECTOR PRESENCE ──
-function trackInspectorPresence(){
-  if(!db||!sessionCode)return;
-  const presRef=ref(db,`sessions/${sessionCode}/inspectors/${Date.now()+Math.random()}`);
-  // Write presence, clean up on disconnect using onDisconnect
-  import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js").then(({onDisconnect})=>{
-    set(presRef,{t:Date.now()});
-    onDisconnect(presRef).remove();
-  }).catch(()=>{ set(presRef,{t:Date.now()}); });
-}
-
 // ── INSPECTOR JOIN ──
 window.goInspect = async function(){
   const code=$id('insp-code').value.trim().toUpperCase();
@@ -963,6 +927,12 @@ window.goInspect = async function(){
     sessionCode=code; sessionRef=sRef;
     localStorage.setItem('dj_session',code);
     localStorage.setItem('dj_role','inspector');
+    // Track inspector presence
+    const presenceId = genCode()+genCode();
+    const presRef = ref(db,'sessions/'+code+'/inspectorPresence/'+presenceId);
+    await set(presRef, Date.now());
+    fbOnDisconnect(presRef).remove();
+    window.addEventListener('beforeunload',()=>{ try{ import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js").then(m=>m.remove(presRef)); }catch(e){} });
     myRole='inspector'; startInspector();
   }catch(e){ toast('خطأ: '+e.message,'error'); btn.disabled=false; }
 };
@@ -985,16 +955,20 @@ function renderAdmin(data){
   const badge=$id('admin-status-badge');
   badge.className='status-bdg '+(bdgMap[data.status]||'');
   badge.textContent=bdgTxt[data.status]||data.status;
+  // Inspector count
+  const inspCount=Object.keys(data.inspectorPresence||{}).length;
+  const icBadge=$id('inspector-count-badge');
+  if(icBadge){
+    if(inspCount>0){
+      icBadge.style.display='inline-flex';
+      $id('inspector-count-num').textContent=inspCount;
+    } else {
+      icBadge.style.display='none';
+    }
+  }
   renderRequests(data.requests||{},data.judgeSlots||{});
   renderSlots(data.judgeSlots||{},data.judgeNames||{});
   renderAdminScores(data);
-  // Inspector count
-  const inspectors=data.inspectors||{};
-  const now=Date.now();
-  const activeInsp=Object.values(inspectors).filter(v=>v&&(now-(v.t||0))<30000).length;
-  const badge=$id('insp-count-badge'),num=$id('insp-count-num');
-  if(badge){badge.style.display=activeInsp>0?'inline-flex':'none';}
-  if(num)num.textContent=activeInsp;
   const fb=$id('btn-final');
   fb.disabled=!!data.finalSubmitted;
   fb.textContent=data.finalSubmitted?'✅ تم الإرسال':'🏁 إرسال النتيجة';
@@ -1238,12 +1212,6 @@ let inspData={};
 function startInspector(){
   showScreen('screen-inspector');
   $id('insp-code-display').textContent=sessionCode;
-  // Write presence every 10s so admin sees live count
-  const presKey='insp_'+Date.now();
-  const presRef=ref(db,`sessions/${sessionCode}/inspectors/${presKey}`);
-  set(presRef,{t:Date.now()});
-  const keepAlive=setInterval(()=>update(presRef,{t:Date.now()}),10000);
-  window.addEventListener('beforeunload',()=>{ clearInterval(keepAlive); remove(presRef); });
   listeners.forEach(u=>u()); listeners=[];
   const unsub=onValue(sessionRef,snap=>{
     if(!snap.exists())return;
@@ -1290,20 +1258,26 @@ function renderInspector(data){
           <span class="insp-crit-score">${cv}/${maxCrit}</span>
         </div>`;
       }
-      // Notes from judges in inspector view
+      // Show judge comments for this member
       const notesData=data.notes||{};
       let hasNotes=false;
-      let noteRows='';
+      let notesHtml='';
       for(let j=1;j<=NJ;j++){
-        const jNoteArr=(notesData[j]||[])[t];
-        const note=Array.isArray(jNoteArr)?jNoteArr[m]:(typeof jNoteArr==='object'&&jNoteArr?jNoteArr[m]:'');
+        const note=((notesData[j]||[])[t]||[])[m];
         if(note&&note.trim()){
-          const jName=(data.judgeNames||{})[j]||('حكم '+arabicNum(j));
-          noteRows+=`<div style="display:flex;gap:6px;margin-bottom:3px;font-size:11px"><span style="font-weight:700;color:#92400E;white-space:nowrap">${esc(jName)}:</span><span style="color:#374151">${esc(note.trim())}</span></div>`;
           hasNotes=true;
+          notesHtml+=`<div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:5px">
+            <span style="font-size:10px;font-weight:900;background:${t===0?'#1565C0':'#4527A0'};color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${j}</span>
+            <span style="font-size:11px;color:#374151;line-height:1.6">${esc(note)}</span>
+          </div>`;
         }
       }
-      if(hasNotes) html+=`<div style="margin:6px 0 2px;background:#FFFBF0;border:1px solid #FEF3C7;border-radius:6px;padding:8px 10px"><div style="font-size:10px;font-weight:700;color:#92400E;margin-bottom:4px">💬 ملاحظات الحكام</div>${noteRows}</div>`;
+      if(hasNotes){
+        html+=`<div style="margin-top:8px;padding:8px 10px;background:#FFFBF0;border-radius:6px;border-right:3px solid #F59E0B">
+          <div style="font-size:10px;font-weight:800;color:#92400E;margin-bottom:6px">💬 ملاحظات الحكام</div>
+          ${notesHtml}
+        </div>`;
+      }
       html+=`</div>`;
     }
     $id(`insp-team-${t}`).innerHTML=html;
@@ -1422,67 +1396,50 @@ function doFinalResultPrint(data){
 <title>النتيجة النهائية</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-@page{size:A4 portrait;margin:14mm 12mm}
+@page{size:A4 portrait;margin:10mm 10mm}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;font-size:12px}
+body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;font-size:11px}
 /* ── HEADER ── */
 .page-header{display:flex;align-items:center;justify-content:space-between;
-  border-bottom:3px solid #1565C0;padding-bottom:10px;margin-bottom:16px}
-.ph-logo{font-size:11px;font-weight:700;color:#64748b;letter-spacing:1px}
-.ph-title{font-size:18px;font-weight:900;color:#0f172a;text-align:center;flex:1;padding:0 10px}
-.ph-meta{font-size:11px;color:#64748b;text-align:left;white-space:nowrap}
-/* ── MATCH IDENTITY ── */
-.match-identity{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;margin-bottom:14px;
-  border:2px solid #E2E8F0;border-radius:10px;overflow:hidden}
-.mi-team{padding:12px 14px;text-align:center}
-.mi-team-a{background:#EEF7FF;border-left:4px solid #1565C0}
-.mi-team-b{background:#F3F0FF;border-right:4px solid #4527A0}
-.mi-role{font-size:9px;font-weight:700;letter-spacing:1.5px;color:#94A3B8;margin-bottom:4px;text-transform:uppercase}
-.mi-name{font-size:14px;font-weight:900;color:#0f172a;margin-bottom:6px;line-height:1.3}
-.mi-team-a .mi-name{color:#1565C0}.mi-team-b .mi-name{color:#4527A0}
-.mi-members{display:flex;flex-direction:column;gap:2px}
-.mi-members span{font-size:10px;color:#475569;background:#fff;border-radius:3px;padding:1px 6px;display:inline-block}
-.mi-vs{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;
-  background:#F8FAFC;border-left:1.5px solid #E2E8F0;border-right:1.5px solid #E2E8F0;min-width:90px}
-.mi-vs-topic{font-size:9px;color:#64748B;text-align:center;margin-bottom:6px;font-weight:600;max-width:80px;line-height:1.4}
-.mi-vs-circle{width:32px;height:32px;background:#0f172a;color:#fff;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;margin:4px auto}
-.mi-vs-flat{font-size:9px;color:#64748B;margin-top:6px;font-weight:600}
+  border-bottom:3px solid #1565C0;padding-bottom:8px;margin-bottom:12px}
+.ph-logo{font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px}
+.ph-title{font-size:16px;font-weight:900;color:#0f172a;text-align:center;flex:1;padding:0 10px}
+.ph-meta{font-size:10px;color:#64748b;text-align:left;white-space:nowrap}
 /* ── WINNER BANNER ── */
-.winner-banner{border-radius:10px;padding:14px 20px;text-align:center;margin-bottom:16px;
+.winner-banner{border-radius:8px;padding:10px 16px;text-align:center;margin-bottom:12px;
   border:2px solid ${WIN_BORDER};background:${WIN_BG};color:${WIN_TEXT}}
-.wb-icon{font-size:28px;line-height:1;margin-bottom:4px}
-.wb-label{font-size:10px;font-weight:700;letter-spacing:2px;opacity:.75;margin-bottom:3px}
-.wb-name{font-size:20px;font-weight:900;margin-bottom:4px}
+.wb-icon{font-size:22px;line-height:1;margin-bottom:2px}
+.wb-label{font-size:9px;font-weight:700;letter-spacing:2px;opacity:.75;margin-bottom:2px}
+.wb-name{font-size:16px;font-weight:900;margin-bottom:3px}
 .wb-scores{display:flex;align-items:baseline;justify-content:center;gap:6px}
-.wb-score-big{font-size:34px;font-weight:900}
-.wb-score-max{font-size:13px;opacity:.6}
+.wb-score-big{font-size:26px;font-weight:900}
+.wb-score-max{font-size:11px;opacity:.6}
 /* ── TEAMS GRID ── */
-.teams-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.teams-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .team-card{border-radius:8px;overflow:hidden;border:1.5px solid}
 .tc-a{border-color:${A_MED}}.tc-b{border-color:${B_MED}}
 .tc-head{padding:8px 12px;font-size:13px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
 .tc-head-a{background:${A_MAIN};color:#fff}.tc-head-b{background:${B_MAIN};color:#fff}
 .tc-head-total{font-size:17px;font-weight:900;opacity:.95}
-.crit-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #CBD5E1;background:#fff}
+.crit-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1.5px solid #cbd5e1;background:#fff}
 .crit-row:last-child{border-bottom:none}
 .crit-num{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   font-size:9px;font-weight:900;flex-shrink:0;color:#fff}
 .cn-a{background:${A_MAIN}}.cn-b{background:${B_MAIN}}
 .crit-label{font-size:10px;color:#374151;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.crit-bar-wrap{width:60px;height:7px;background:#f1f5f9;border-radius:3px;overflow:hidden;flex-shrink:0}
+.crit-bar-wrap{width:50px;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;flex-shrink:0}
 .crit-bar-a{height:100%;background:${A_MAIN};border-radius:3px}
 .crit-bar-b{height:100%;background:${B_MAIN};border-radius:3px}
-.crit-score{font-size:11px;font-weight:900;width:30px;text-align:center;flex-shrink:0}
+.crit-score{font-size:10px;font-weight:900;width:26px;text-align:center;flex-shrink:0}
 .cs-a{color:${A_MAIN}}.cs-b{color:${B_MAIN}}
 .crit-max{font-size:9px;color:#9ca3af;flex-shrink:0}
 /* ── VS DIVIDER ── */
 .vs-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.vs-bar::before,.vs-bar::after{content:'';flex:1;height:1px;background:#94A3B8}
-.vs-text{font-size:11px;font-weight:900;color:#9ca3af;letter-spacing:2px}
+.vs-bar::before,.vs-bar::after{content:'';flex:1;height:1.5px;background:#94a3b8}
+.vs-text{font-size:11px;font-weight:900;color:#64748b;letter-spacing:2px}
 /* ── SCORE COMPARISON ── */
 .score-compare{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:0;margin-bottom:14px;
-  border:2px solid #94A3B8;border-radius:8px;overflow:hidden}
+  border:2px solid #94a3b8;border-radius:8px;overflow:hidden}
 .sc-team{padding:12px 10px;text-align:center}
 .sc-team-a{background:${A_LIGHT}}.sc-team-b{background:${B_LIGHT}}
 .sc-name{font-size:11px;font-weight:700;margin-bottom:4px}
@@ -1490,23 +1447,33 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;fon
 .sc-score{font-size:30px;font-weight:900}
 .sc-score-a{color:${A_MAIN}}.sc-score-b{color:${B_MAIN}}
 .sc-max{font-size:10px;color:#9ca3af}
-.sc-middle{background:#F1F5F9;padding:12px 8px;text-align:center;border-left:1.5px solid #94A3B8;border-right:1.5px solid #94A3B8}
+.sc-middle{background:#f1f5f9;padding:12px 8px;text-align:center;border-left:1.5px solid #94a3b8;border-right:1.5px solid #94a3b8}
 .sc-middle-icon{font-size:18px;display:block}
-.sc-middle-diff{font-size:10px;color:#64748b;margin-top:3px}
+.sc-middle-diff{font-size:10px;color:#475569;margin-top:3px}
 /* ── JUDGES STRIP ── */
-.judges-strip{background:#F1F5F9;border:1.5px solid #94A3B8;border-radius:6px;
+.judges-strip{background:#f1f5f9;border:1.5px solid #94a3b8;border-radius:6px;
   padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.js-label{font-size:10px;font-weight:700;color:#64748b;white-space:nowrap}
-.judge-pill{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1.5px solid #94A3B8;
-  border-radius:20px;padding:3px 9px;font-size:10px;font-weight:600;color:#374151}
+.js-label{font-size:10px;font-weight:700;color:#475569;white-space:nowrap}
+.judge-pill{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1.5px solid #94a3b8;
+  border-radius:20px;padding:3px 9px;font-size:10px;font-weight:600;color:#1e293b}
 .jp-num{width:16px;height:16px;background:#1565C0;color:#fff;border-radius:50%;
   display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;flex-shrink:0}
+/* ── TEAMS IDENTITY ── */
+.teams-identity{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.ti-card{border-radius:8px;overflow:hidden;border:1.5px solid}
+.ti-a{border-color:#93c5fd}.ti-b{border-color:#c4b5fd}
+.ti-head{padding:7px 12px;font-size:12px;font-weight:900;color:#fff}
+.ti-head-a{background:#1565C0}.ti-head-b{background:#4527A0}
+.ti-member{padding:4px 12px;font-size:11px;color:#334155;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:6px}
+.ti-member:last-child{border-bottom:none}
+.ti-m-num{font-size:9px;font-weight:900;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.ti-m-a{background:#1565C0}.ti-m-b{background:#4527A0}
 /* ── FOOTER ── */
-.page-footer{border-top:2px solid #94A3B8;padding-top:8px;display:flex;justify-content:space-between;
-  align-items:center;font-size:9px;color:#9ca3af;margin-top:4px}
+.page-footer{border-top:1.5px solid #94a3b8;padding-top:8px;display:flex;justify-content:space-between;
+  align-items:center;font-size:9px;color:#475569;margin-top:4px}
 @media print{
   body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .page-header,.winner-banner,.teams-grid,.vs-bar,.score-compare,.judges-strip,.page-footer{page-break-inside:avoid}
+  .page-header,.teams-identity,.winner-banner,.teams-grid,.vs-bar,.score-compare,.judges-strip,.page-footer{page-break-inside:avoid}
 }
 </style></head><body>
 
@@ -1516,22 +1483,23 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;fon
   <div class="ph-meta">رقم الشقة: ${esc(flatN)}</div>
 </div>
 
-<div class="match-identity">
-  <div class="mi-team mi-team-a">
-    <div class="mi-role">الفريق المؤيد</div>
-    <div class="mi-name">${esc(tN[0])}</div>
-    <div class="mi-members">${(mN[0]||[])[0]?'<span>'+esc((mN[0]||[])[0])+'</span>':''}${(mN[0]||[])[1]?'<span>'+esc((mN[0]||[])[1])+'</span>':''}${(mN[0]||[])[2]?'<span>'+esc((mN[0]||[])[2])+'</span>':''}</div>
-  </div>
-  <div class="mi-vs">
-    <div class="mi-vs-topic">${esc(topic)}</div>
-    <div class="mi-vs-circle">VS</div>
-    <div class="mi-vs-flat">شقة ${esc(flatN)}</div>
-  </div>
-  <div class="mi-team mi-team-b">
-    <div class="mi-role">الفريق المعارض</div>
-    <div class="mi-name">${esc(tN[1])}</div>
-    <div class="mi-members">${(mN[1]||[])[0]?'<span>'+esc((mN[1]||[])[0])+'</span>':''}${(mN[1]||[])[1]?'<span>'+esc((mN[1]||[])[1])+'</span>':''}${(mN[1]||[])[2]?'<span>'+esc((mN[1]||[])[2])+'</span>':''}</div>
-  </div>
+<div class="teams-identity">`;
+
+  // Team A identity
+  H+=`<div class="ti-card ti-a">
+    <div class="ti-head ti-head-a">📘 ${esc(tN[0])}</div>`;
+  for(let m=0;m<NM;m++){
+    H+=`<div class="ti-member"><span class="ti-m-num ti-m-a">${m+1}</span>${esc((mN[0]||[])[m]||'م'+(m+1))}</div>`;
+  }
+  H+=`</div>`;
+
+  // Team B identity
+  H+=`<div class="ti-card ti-b">
+    <div class="ti-head ti-head-b">📗 ${esc(tN[1])}</div>`;
+  for(let m=0;m<NM;m++){
+    H+=`<div class="ti-member"><span class="ti-m-num ti-m-b">${m+1}</span>${esc((mN[1]||[])[m]||'م'+(m+1))}</div>`;
+  }
+  H+=`</div>
 </div>
 
 <div class="winner-banner">
@@ -1616,6 +1584,7 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;fon
 
 function doDetailPrint(data){
   const scores=data.scores||{},tN=data.teamNames||['',''],mN=data.memberNames||[[],[]];
+  const notesData=data.notes||{};
   const topic=data.topic==='custom'?(data.customTopic||'—'):(data.topic||'—');
   const flatN=data.round||'—';
   const aTotal=calcTeamTotal(scores,0), bTotal=calcTeamTotal(scores,1);
@@ -1637,44 +1606,45 @@ function doDetailPrint(data){
 body{font-family:'Cairo',sans-serif;direction:rtl;background:#f8fafc;color:#111;padding:20px}
 .page-hdr{text-align:center;margin-bottom:20px}
 .page-hdr h1{font-size:20px;font-weight:900;color:#0f172a}
-.page-hdr p{font-size:12px;color:#64748b;margin-top:4px}
+.page-hdr p{font-size:12px;color:#475569;margin-top:4px}
 .team-wrap{margin-bottom:28px;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.08)}
 .team-head{padding:12px 18px;font-size:15px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
 .team-head-a{background:linear-gradient(135deg,#1565C0,#1e40af);color:#fff}
 .team-head-b{background:linear-gradient(135deg,#4527A0,#6d28d9);color:#fff}
 .team-head .t-total{font-size:22px;font-weight:900;opacity:.95}
-.member-row{background:#fff;border-bottom:1.5px solid #CBD5E1;padding:14px 18px}
+.member-row{background:#fff;border-bottom:2px solid #cbd5e1;padding:14px 18px}
 .member-row:last-child{border-bottom:none}
 .mem-name{font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px;display:flex;justify-content:space-between}
 .mem-total-badge-a{background:#dbeafe;color:#1565C0;border-radius:4px;padding:2px 10px;font-size:13px;font-weight:900}
 .mem-total-badge-b{background:#ede9fe;color:#4527A0;border-radius:4px;padding:2px 10px;font-size:13px;font-weight:900}
 .crit-grid{display:flex;flex-direction:column;gap:6px}
 .crit-item{display:flex;align-items:center;gap:10px}
-.crit-lbl{font-size:11px;color:#475569;width:220px;flex-shrink:0;text-align:right}
-.bar-bg{flex:1;height:10px;background:#E2E8F0;border-radius:5px;overflow:hidden}
+.crit-lbl{font-size:11px;color:#334155;width:220px;flex-shrink:0;text-align:right;font-weight:600}
+.bar-bg{flex:1;height:10px;background:#e2e8f0;border-radius:5px;overflow:hidden}
 .bar-fg-a{height:100%;background:linear-gradient(90deg,#3b82f6,#1d4ed8);border-radius:5px}
 .bar-fg-b{height:100%;background:linear-gradient(90deg,#8b5cf6,#6d28d9);border-radius:5px}
 .crit-score{font-size:12px;font-weight:900;width:40px;text-align:center;flex-shrink:0;color:#0f172a}
-.crit-max{font-size:10px;color:#94a3b8;flex-shrink:0}
+.crit-max{font-size:10px;color:#64748b;flex-shrink:0}
+.judge-notes-block{margin-top:10px;padding:10px 12px;background:#FFFBF0;border-radius:8px;border-right:3px solid #F59E0B}
+.judge-notes-title{font-size:11px;font-weight:800;color:#92400E;margin-bottom:7px}
+.judge-note-row{display:flex;gap:7px;align-items:flex-start;margin-bottom:6px}
+.judge-note-row:last-child{margin-bottom:0}
+.jn-num{font-size:9px;font-weight:900;background:#F59E0B;color:#fff;border-radius:50%;width:17px;height:17px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.jn-text{font-size:11px;color:#374151;line-height:1.6}
 .final-compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px}
 .fc-card{border-radius:10px;padding:16px;text-align:center}
-.fc-a{background:#eff6ff;border:2px solid #bfdbfe}
-.fc-b{background:#f5f3ff;border:2px solid #ddd6fe}
+.fc-a{background:#eff6ff;border:2px solid #93c5fd}
+.fc-b{background:#f5f3ff;border:2px solid #c4b5fd}
 .fc-name{font-size:13px;font-weight:700;margin-bottom:6px}
 .fc-name-a{color:#1565C0}.fc-name-b{color:#4527A0}
 .fc-score-a{font-size:38px;font-weight:900;color:#1565C0}
 .fc-score-b{font-size:38px;font-weight:900;color:#4527A0}
-.fc-max{font-size:12px;color:#94a3b8}
+.fc-max{font-size:12px;color:#64748b}
 .winner-strip{text-align:center;padding:14px;border-radius:10px;font-size:16px;font-weight:900;margin-bottom:20px}
-.ws-a{background:#eff6ff;color:#1565C0;border:2px solid #bfdbfe}
-.ws-b{background:#f5f3ff;color:#4527A0;border:2px solid #ddd6fe}
-.ws-draw{background:#F1F5F9;color:#334155;border:2px solid #94A3B8}
-.note{text-align:center;font-size:11px;color:#94a3b8;margin-top:18px}
-.notes-section{margin-top:8px;background:#FFFBF0;border:1px solid #FEF3C7;border-radius:6px;padding:8px 12px}
-.notes-label{font-size:10px;font-weight:700;color:#92400E;margin-bottom:5px}
-.note-row{display:flex;gap:8px;margin-bottom:3px;align-items:flex-start}
-.note-judge{font-size:10px;font-weight:700;color:#B45309;white-space:nowrap;flex-shrink:0}
-.note-txt{font-size:11px;color:#374151;line-height:1.5}
+.ws-a{background:#eff6ff;color:#1565C0;border:2px solid #93c5fd}
+.ws-b{background:#f5f3ff;color:#4527A0;border:2px solid #c4b5fd}
+.ws-draw{background:#f1f5f9;color:#475569;border:2px solid #94a3b8}
+.note{text-align:center;font-size:11px;color:#64748b;margin-top:18px}
 @media(max-width:600px){.crit-lbl{width:130px}.final-compare{grid-template-columns:1fr}}
 @media print{body{padding:10px;background:#f8fafc!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
@@ -1716,18 +1686,25 @@ body{font-family:'Cairo',sans-serif;direction:rtl;background:#f8fafc;color:#111;
           <span class="crit-max">/${maxCrit}</span>
         </div>`;
       }
-      // Notes from judges
-      let notesHtml='';
+      H+=`</div>`;
+      // Judge notes for this member
+      let notesRows='';
       for(let j=1;j<=NJ;j++){
-        const jNote=((data.notes||{})[j]||[])[t];
-        const note=Array.isArray(jNote)?jNote[m]:(jNote&&jNote[m])||'';
+        const note=((notesData[j]||[])[t]||[])[m];
         if(note&&note.trim()){
-          const jN=(data.judgeNames||{})[j]||('حكم '+arabicNum(j));
-          notesHtml+=`<div class="note-row"><span class="note-judge">${esc(jN)}:</span><span class="note-txt">${esc(note.trim())}</span></div>`;
+          notesRows+=`<div class="judge-note-row">
+            <span class="jn-num">${j}</span>
+            <span class="jn-text">${esc(note)}</span>
+          </div>`;
         }
       }
-      if(notesHtml) H+=`<div class="notes-section"><div class="notes-label">💬 ملاحظات الحكام</div>${notesHtml}</div>`;
-      H+=`</div></div>`;
+      if(notesRows){
+        H+=`<div class="judge-notes-block">
+          <div class="judge-notes-title">💬 ملاحظات الحكام</div>
+          ${notesRows}
+        </div>`;
+      }
+      H+=`</div>`;
     }
     H+=`</div>`;
   }
